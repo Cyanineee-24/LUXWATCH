@@ -1,0 +1,451 @@
+/* ============================================================
+   LuxWatch — Register Account Page (component-scoped styles)
+   ============================================================ */
+
+/* ============================================================
+   MAIN SPLIT — Hero Left | Register Form Right
+   ============================================================ */
+
+.register-split {
+    display: flex;
+    min-height: calc(100vh - 60px);
+    width: 100%;
+}
+
+/* LEFT COLUMN — Hero image                                      */
+
+.register-hero {
+    position: relative;
+    flex: 0 0 58%;
+    max-width: 58%;
+    background-image: url('/images/register_hero_art.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.register-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        /* Horizontal fade: darker toward the left/text side, lighter toward right to reveal watch */
+        linear-gradient(
+            to right,
+            rgba(10, 14, 26, 0.70) 0%,
+            rgba(10, 14, 26, 0.58) 35%,
+            rgba(10, 14, 26, 0.38) 65%,
+            rgba(10, 14, 26, 0.20) 100%
+        ),
+        /* Vertical fade: darker at top and bottom where eyebrow and footer sit, tapering in middle */
+        linear-gradient(
+            to bottom,
+            rgba(10, 14, 26, 0.65) 0%,
+            rgba(10, 14, 26, 0.30) 25%,
+            rgba(10, 14, 26, 0.15) 50%,
+            rgba(10, 14, 26, 0.40) 75%,
+            rgba(10, 14, 26, 0.75) 100%
+        );
+    pointer-events: none;
+}
+
+.register-hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 0 var(--space-2xl);
+    margin-top: -8vh;
+}
+
+/* Suppress Blazor FocusOnNavigate outline on h1 */
+.register-headline:focus,
+.register-headline:focus-visible {
+    outline: none;
+    box-shadow: none;
+}
+
+.register-eyebrow {
+    font-family: var(--font-ui);
+    font-weight: 300;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+    margin-bottom: var(--space-md);
+    line-height: 1.4;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.register-headline {
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    outline: none;
+    font-size: clamp(2.2rem, 3.5vw, 3.4rem);
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+    color: var(--color-white);
+    margin: 0;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+
+.register-hero-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-lg) var(--space-2xl);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 300;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+    z-index: 1;
+    max-width: 520px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    /* Dedicated bottom gradient to ensure readability */
+    background: linear-gradient(
+        to top,
+        rgba(10, 14, 26, 0.85) 0%,
+        rgba(10, 14, 26, 0.45) 60%,
+        rgba(10, 14, 26, 0.0) 100%
+    );
+    padding-top: 50px;
+}
+
+/* RIGHT COLUMN — Register form panel                            */
+
+.register-panel {
+    flex: 0 0 42%;
+    max-width: 42%;
+    background: #0f1420;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px var(--space-2xl);
+    box-sizing: border-box;
+}
+
+.register-form-wrapper {
+    width: 100%;
+    max-width: 420px;
+}
+
+.register-title {
+    font-family: var(--font-editorial);
+    font-weight: 700;
+    font-size: 1.85rem;
+    letter-spacing: 0.04em;
+    color: var(--color-text);
+    margin-bottom: 4px;
+}
+
+.register-subtitle {
+    font-family: var(--font-ui);
+    font-weight: 300;
+    font-size: 0.84rem;
+    color: var(--color-text-muted);
+    margin-bottom: 14px;
+    line-height: 1.35;
+}
+
+.register-form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* FORM FIELDS                                                   */
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-label {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: 4px;
+    letter-spacing: 0.01em;
+}
+
+.form-input {
+    width: 100%;
+    padding: 9.5px 14px;
+    background: #1a1f2e;
+    border: 1px solid #2a3148;
+    border-radius: 8px;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 400;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.7;
+}
+
+.form-input:focus {
+    border-color: #c9a96e;
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.12);
+}
+
+.input-password-wrap {
+    position: relative;
+}
+
+.form-input--password {
+    padding-right: 42px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+    color: var(--color-text);
+}
+
+/* CONSENT CHECKBOX ROW                                          */
+
+.form-consent-row {
+    margin-top: 4px;
+    margin-bottom: 14px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.checkbox-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.checkbox-visual {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    min-width: 15px;
+    border: 1px solid #2a3148;
+    border-radius: 3px;
+    background: #1a1f2e;
+    margin-top: 2px;
+    flex-shrink: 0;
+    position: relative;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.checkbox-input:checked + .checkbox-visual {
+    background: #d4a94a;
+    border-color: #d4a94a;
+}
+
+.checkbox-input:checked + .checkbox-visual::after {
+    content: '';
+    position: absolute;
+    top: 1.5px;
+    left: 4.5px;
+    width: 4px;
+    height: 7px;
+    border: solid #0f1420;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-input:focus-visible + .checkbox-visual {
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.25);
+}
+
+.checkbox-text {
+    font-family: var(--font-ui);
+    font-size: 0.73rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+/* SUBMIT BUTTON                                                 */
+
+.btn-register {
+    width: 100%;
+    padding: 13.5px 20px;
+    background: #d4a94a;
+    border: none;
+    border-radius: 8px;
+    color: #0a0e1a;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.btn-register:hover {
+    background: #c9a227;
+    box-shadow: 0 4px 20px rgba(212, 169, 74, 0.25);
+}
+
+.btn-register:active {
+    transform: scale(0.985);
+}
+
+.btn-register:focus-visible {
+    outline: 2px solid #d4a94a;
+    outline-offset: 3px;
+}
+
+/* LOGIN PROMPT                                                  */
+
+.login-prompt {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.81rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+.login-link {
+    color: #d4a94a;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.login-link:hover {
+    color: #e0bc66;
+    text-decoration: underline;
+}
+
+/* DISCLAIMER                                                    */
+
+.form-disclaimer {
+    font-family: var(--font-ui);
+    font-size: 0.70rem;
+    font-weight: 300;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+    opacity: 0.7;
+    text-align: left;
+}
+
+/* ============================================================
+   RESPONSIVE — Tablet (≤ 960px)
+   ============================================================ */
+
+@media (max-width: 960px) {
+    .register-hero {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    .register-panel {
+        flex: 0 0 50%;
+        max-width: 50%;
+        padding: var(--space-xl) var(--space-lg);
+    }
+
+    .register-headline {
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile (≤ 768px)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    .register-split {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .register-hero {
+        flex: none;
+        max-width: 100%;
+        width: 100%;
+        min-height: 360px;
+        height: 40vh;
+    }
+
+    .register-hero-content {
+        padding: 0 24px;
+        margin-top: 0;
+    }
+
+    .register-hero-footer {
+        padding: var(--space-md) 24px;
+        padding-top: 60px;
+        max-width: 100%;
+        font-size: 0.78rem;
+    }
+
+    .register-panel {
+        flex: none;
+        max-width: 100%;
+        width: 100%;
+        padding: var(--space-2xl) 24px;
+    }
+
+    .register-form-wrapper {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — Small Mobile (≤ 480px)
+   ============================================================ */
+
+@media (max-width: 480px) {
+    .register-hero {
+        min-height: 280px;
+        height: 35vh;
+    }
+
+    .register-headline {
+        font-size: 1.8rem;
+    }
+
+    .register-eyebrow {
+        font-size: 0.78rem;
+    }
+
+    .register-panel {
+        padding: var(--space-xl) 20px var(--space-2xl);
+    }
+
+    .btn-register {
+        padding: 13px 20px;
+        font-size: 0.82rem;
+    }
+}

@@ -42,3 +42,15 @@ build_metadata.AdditionalFiles.CssScope = b-x8f02d4jkk
 [C:/Users/Cyanineee/Documents/PROJECTS/LuxWatch/Pages/LandingPage/LandingPage.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTGFuZGluZ1BhZ2VcTGFuZGluZ1BhZ2UucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-iqnkf154wz
+
+[C:/Users/Cyanineee/Documents/PROJECTS/LuxWatch/Pages/Login/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTG9naW5cTG9naW4ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-n86rjjbn8s
+
+[C:/Users/Cyanineee/Documents/PROJECTS/LuxWatch/Pages/Register/Register.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVnaXN0ZXJcUmVnaXN0ZXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-y4ykwhy3sn
+
+[C:/Users/Cyanineee/Documents/PROJECTS/LuxWatch/Shared/Navbar.razor]
+build_metadata.AdditionalFiles.TargetPath = U2hhcmVkXE5hdmJhci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = b-2hknxwa4kk

@@ -1,0 +1,218 @@
+/* ============================================================
+   LuxWatch — Shared Navigation Bar
+   ============================================================ */
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px var(--space-2xl);
+    background: var(--color-bg-header);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    font-family: var(--font-editorial);
+    font-weight: 400;
+    font-size: 1.35rem;
+    letter-spacing: 0.18em;
+    color: var(--color-gold);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.logo:hover {
+    color: var(--color-gold-light);
+}
+
+.search-bar {
+    flex: 1;
+    max-width: 440px;
+    margin: 0 var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 10px 20px;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.search-bar:hover {
+    border-color: var(--color-border-card);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.search-icon {
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+/* User / Status badge (Guest User or Collector Portal) */
+.user-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--color-text);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-muted);
+}
+
+/* Account link ("Login or register") */
+.account-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--color-text);
+    white-space: nowrap;
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.account-link:hover {
+    color: var(--color-gold);
+}
+
+/* Mobile menu toggle */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.hamburger-line {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--color-text);
+    border-radius: 1px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Mobile dropdown menu */
+.mobile-menu {
+    display: none;
+    background: var(--color-bg-header);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-md) var(--space-2xl);
+}
+
+.mobile-menu-inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.mobile-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 10px 20px;
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.mobile-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--color-text);
+    padding: var(--space-sm) 0;
+}
+
+.mobile-account-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--color-text);
+    text-decoration: none;
+    padding: var(--space-sm) 0;
+}
+
+/* ============================================================
+   RESPONSIVE — Tablet (≤ 960px)
+   ============================================================ */
+@media (max-width: 960px) {
+    .site-header {
+        padding: 16px var(--space-lg);
+    }
+
+    .search-bar {
+        max-width: 320px;
+        margin: 0 var(--space-md);
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile (≤ 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .site-header {
+        padding: 14px 20px;
+    }
+
+    .search-bar {
+        display: none;
+    }
+
+    .account-link,
+    .user-badge {
+        display: none;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    .mobile-menu {
+        display: block;
+        padding: var(--space-md) 20px;
+    }
+}

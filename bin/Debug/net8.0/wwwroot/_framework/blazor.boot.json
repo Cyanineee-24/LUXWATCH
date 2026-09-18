@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "LuxWatch",
   "resources": {
-    "hash": "sha256-/jW/jSemG+k3y2v0WeJrfT9lmBWWXUawFKe9akFFq0I=",
+    "hash": "sha256-KqSFHHlSeI6obf6GR+CSvcQPZaMEdh6hRT1JBaJib9g=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-9NoXeVUo4WNrEqrjAp/y3Yc8NmDcymQkzMGOIbIpGio="
     },
@@ -209,10 +209,10 @@
       "mscorlib.wasm": "sha256-Gz8PyW2/fwihe5ul81OwmRUrU71r+KtbyRw6xlOGD+Q=",
       "netstandard.wasm": "sha256-jMTqIQzoDS810lyhZpMO5eEC36EzntXqSVn+2qwkOMQ=",
       "System.Private.CoreLib.wasm": "sha256-NFj5WE5VLP2LptZIRJCUIc1AMk06FmxpsSILfPISwAw=",
-      "LuxWatch.wasm": "sha256-NaxPufaPMRcUAOX+kVJRiYftFJCyXoIkfpuhlMkybSs="
+      "LuxWatch.wasm": "sha256-1tfdQz2I6WE5ycH8gxOPSqhmhav4/AzojWMD7m9OKRo="
     },
     "pdb": {
-      "LuxWatch.pdb": "sha256-lxK4RpgIkUexc7qMm6GH9xBGM6f6uUU7V4T6F6aWaAs="
+      "LuxWatch.pdb": "sha256-MoUorjcyNQoiCQsifimHWSxQO+cJa8zEIygFwyixHbs="
     }
   },
   "cacheBootResources": true,

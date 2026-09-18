@@ -2067,6 +2067,9 @@ C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\LuxWatch.dll
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\refint\LuxWatch.dll
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\LuxWatch.pdb
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\ref\LuxWatch.dll
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\ulnuk1fc5f-{0}-1dyxc9n7mw-1dyxc9n7mw.gz
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\9fgdv6vq0e-{0}-ldszvtue8b-ldszvtue8b.gz
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\r3hmcbm050-{0}-w8ib4paucs-w8ib4paucs.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\scopedcss\Pages\Login\Login.razor.rz.scp.css
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\scopedcss\Shared\Navbar.razor.rz.scp.css
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\scopedcss\Pages\Register\Register.razor.rz.scp.css
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\ulnuk1fc5f-{0}-qfubl93x4x-qfubl93x4x.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\9fgdv6vq0e-{0}-2gr1cm6hhf-2gr1cm6hhf.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\r3hmcbm050-{0}-fq68sac1tb-fq68sac1tb.gz

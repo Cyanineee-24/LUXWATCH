@@ -1,0 +1,141 @@
+@page "/account/login"
+
+<PageTitle>Login — LuxWatch</PageTitle>
+
+<Navbar NavbarMode="guest" />
+
+<!-- ============================================================
+     MAIN — Two-column: Hero Left | Login Form Right
+     ============================================================ -->
+<section class="login-split" aria-label="Login">
+
+    <!-- LEFT COLUMN — Hero image with overlay text -->
+    <div class="login-hero">
+        <div class="login-hero-overlay"></div>
+        <div class="login-hero-content">
+            <p class="login-eyebrow">The Million Dollar Men's Choice</p>
+            <h1 class="login-headline">A Heritage of<br/>Excellence, Secured.</h1>
+        </div>
+        <p class="login-hero-footer">
+            Access your global vault. Track your investments, verify serial profiles,
+            and coordinate transfers with luxury boutiques worldwide.
+        </p>
+    </div>
+
+    <!-- RIGHT COLUMN — Login form panel -->
+    <div class="login-panel">
+        <div class="login-form-wrapper">
+
+            <h2 class="login-title">Login</h2>
+            <p class="login-subtitle">Enter your credentials to manage your portfolio</p>
+
+            <form @onsubmit="HandleLogin" @onsubmit:preventDefault class="login-form" novalidate>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="login-email" class="form-label">Email Address</label>
+                    <input id="login-email"
+                           type="email"
+                           class="form-input"
+                           placeholder="marcus.vance@horology.com"
+                           @bind="Email"
+                           autocomplete="email"
+                           required />
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="login-password" class="form-label">Security Password</label>
+                    <div class="input-password-wrap">
+                        <input id="login-password"
+                               type="@(showPassword ? "text" : "password")"
+                               class="form-input form-input--password"
+                               placeholder="supersecretpassword"
+                               @bind="Password"
+                               autocomplete="current-password"
+                               required />
+                        <button type="button"
+                                class="password-toggle"
+                                @onclick="TogglePasswordVisibility"
+                                aria-label="@(showPassword ? "Hide password" : "Show password")">
+                            @if (showPassword)
+                            {
+                                <!-- Eye-off icon -->
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                    <line x1="1" y1="1" x2="23" y2="23" />
+                                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <!-- Eye icon -->
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                            }
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember me / Forgot password row -->
+                <div class="form-options-row">
+                    <label class="checkbox-label" for="remember-me">
+                        <input id="remember-me"
+                               type="checkbox"
+                               class="checkbox-input"
+                               @bind="RememberMe" />
+                        <span class="checkbox-visual"></span>
+                        Keep me authenticated
+                    </label>
+                    <a href="/account/forgot-password" class="forgot-link">Forgot Password?</a>
+                </div>
+
+                <!-- Submit button -->
+                <button type="submit" class="btn-sign-in" id="btn-login-submit">
+                    Sign In Securely
+                </button>
+
+            </form>
+
+            <!-- Register link -->
+            <p class="register-prompt">
+                New to LUXWATCH?
+                <!-- HOOK: Route to future Register page (Pages/Register/Register.razor) using register_hero_art.jpg -->
+                <a href="/account/register" class="register-link">Register Account</a>
+            </p>
+
+            <!-- Divider -->
+            <hr class="form-divider" />
+
+            <!-- Disclaimer -->
+            <p class="form-disclaimer">
+                By signing in, you agree to our multi-factor identity protocols
+                and terms of transaction verification.
+            </p>
+        </div>
+    </div>
+
+</section>
+
+
+@code {
+    /* ---- Form state ---- */
+    private string Email { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private bool RememberMe { get; set; } = false;
+    private bool showPassword = false;
+
+    private void TogglePasswordVisibility() => showPassword = !showPassword;
+
+    private void HandleLogin()
+    {
+        // TODO: Wire up authentication logic
+        // For now, this is a stub for the form submission handler.
+        Console.WriteLine($"Login attempt: {Email}");
+    }
+}
