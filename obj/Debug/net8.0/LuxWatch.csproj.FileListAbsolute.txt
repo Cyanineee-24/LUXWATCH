@@ -2067,6 +2067,6 @@ C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\LuxWatch.dll
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\refint\LuxWatch.dll
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\LuxWatch.pdb
 C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\ref\LuxWatch.dll
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\ulnuk1fc5f-{0}-nnqf9q051q-nnqf9q051q.gz
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\9fgdv6vq0e-{0}-tr8zytp1pl-tr8zytp1pl.gz
-C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\r3hmcbm050-{0}-sjhcc1q37o-sjhcc1q37o.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\ulnuk1fc5f-{0}-1dyxc9n7mw-1dyxc9n7mw.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\9fgdv6vq0e-{0}-ldszvtue8b-ldszvtue8b.gz
+C:\Users\Cyanineee\Documents\PROJECTS\LuxWatch\obj\Debug\net8.0\compressed\r3hmcbm050-{0}-w8ib4paucs-w8ib4paucs.gz

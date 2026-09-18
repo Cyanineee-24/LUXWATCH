@@ -205,6 +205,7 @@
     letter-spacing: 0.02em;
     color: var(--color-text);
     margin-bottom: var(--space-xl);
+    outline: none;
 }
 
 .btn-primary[b-iqnkf154wz] {

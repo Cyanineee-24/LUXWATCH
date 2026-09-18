@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LuxWatch")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f0b0355885656cee23a8a8412dddaea62c0e119c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d2637bcd25d84ea363b2eef6ff3a8ac55c23502f")]
 [assembly: System.Reflection.AssemblyProductAttribute("LuxWatch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LuxWatch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
