@@ -16,3 +16,7 @@ publish/
 
 # Mac
 .DS_Store
+
+# Node / Tailwind
+node_modules/
+wwwroot/css/tailwind.css

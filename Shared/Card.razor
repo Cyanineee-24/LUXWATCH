@@ -1,0 +1,18 @@
+<div @attributes="AdditionalAttributes" class="@Classes">@ChildContent</div>
+
+@code {
+    /// <summary>Adds a subtle lift + border highlight on hover.</summary>
+    [Parameter] public bool Hoverable { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string Classes => string.Join(' ', new[]
+    {
+        "rounded-lg border border-border bg-surface p-6 shadow-soft",
+        Hoverable
+            ? "transition duration-200 hover:-translate-y-0.5 hover:border-gold/30 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            : null,
+        Class
+    }.Where(c => !string.IsNullOrWhiteSpace(c)));
+}

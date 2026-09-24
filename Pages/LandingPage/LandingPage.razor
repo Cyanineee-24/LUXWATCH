@@ -2,36 +2,37 @@
 
 <PageTitle>LuxWatch — The Million Dollar Men's Choice</PageTitle>
 
-<Navbar NavbarMode="auth" />
+<!-- HERO -->
+<section class="relative flex min-h-[420px] items-center overflow-hidden bg-[url('/images/landing_page_hero_art.jpg')] bg-cover bg-center md:h-[56vh] md:max-h-155 md:bg-right"
+         aria-label="Featured collection">
+    <div class="absolute inset-0 bg-linear-to-r from-bg/95 via-bg/80 to-bg/40 md:from-bg/90 md:via-bg/60 md:to-bg/5" aria-hidden="true"></div>
 
-<!-- ============================================================
-     HERO
-     ============================================================ -->
-<section class="hero" aria-label="Featured collection">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-        <p class="hero-eyebrow">The Million Dollar Men's Choice</p>
-        <h1 class="hero-title">Bestsellers,<br />Timeless Classics</h1>
-        <a class="btn-primary" href="/collections/bestsellers">Discover Now</a>
-    </div>
+    <Container Class="relative z-10 py-16">
+        <div class="max-w-xl">
+            <p class="mb-4 text-sm font-light tracking-wide text-gold">The Million Dollar Men's Choice</p>
+            <h1 class="mb-8 font-display text-4xl font-bold leading-tight tracking-wide text-text md:text-5xl">
+                Bestsellers,<br />Timeless Classics
+            </h1>
+            <Button Href="/collections/bestsellers" Variant="ButtonVariant.Secondary" Size="ButtonSize.Lg">Discover Now</Button>
+        </div>
+    </Container>
 </section>
 
-<!-- ============================================================
-     STATS / TRUST SECTION
-     ============================================================ -->
-<section class="stats-section" aria-label="Trust and marketplace statistics">
-    <h2 class="stats-heading">The Leading Marketplace for Luxury Watches Since 2003</h2>
-    <div class="stats-grid">
+<!-- STATS / TRUST -->
+<PageSection Title="The Leading Marketplace for Luxury Watches Since 2003" Centered="true">
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Trust and marketplace statistics">
         @foreach (var stat in Stats)
         {
-            <div class="stat-card">
-                <div class="stat-icon" aria-hidden="true">@((MarkupString)stat.IconSvg)</div>
-                <div class="stat-number">@stat.Number</div>
-                <div class="stat-desc">@stat.Description</div>
-            </div>
+            <li>
+                <Card Hoverable="true" Class="h-full text-center">
+                    <div class="mx-auto mb-4 size-12 text-icon [&>svg]:size-full" aria-hidden="true">@((MarkupString)stat.IconSvg)</div>
+                    <p class="text-xl font-bold italic leading-snug text-text">@stat.Number</p>
+                    <p class="mt-2 text-sm text-text-muted">@stat.Description</p>
+                </Card>
+            </li>
         }
-    </div>
-</section>
+    </ul>
+</PageSection>
 
 @code {
     private record Stat(string Number, string Description, string IconSvg);

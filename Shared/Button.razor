@@ -1,0 +1,44 @@
+@if (Href is not null)
+{
+    <a @attributes="AdditionalAttributes" href="@Href" class="@Classes">@ChildContent</a>
+}
+else
+{
+    <button @attributes="AdditionalAttributes" type="@Type" class="@Classes" disabled="@Disabled" @onclick="OnClick">@ChildContent</button>
+}
+
+@code {
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+    [Parameter] public ButtonSize Size { get; set; } = ButtonSize.Md;
+    /// <summary>"button" | "submit" | "reset". Ignored when Href is set.</summary>
+    [Parameter] public string Type { get; set; } = "button";
+    [Parameter] public string? Href { get; set; }
+    /// <summary>Applies to the &lt;button&gt; form only.</summary>
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private const string Base =
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-semibold uppercase tracking-widest " +
+        "transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold " +
+        "disabled:cursor-not-allowed disabled:opacity-50";
+
+    private string VariantClasses => Variant switch
+    {
+        ButtonVariant.Secondary => "border border-text/40 text-text hover:border-gold hover:text-gold",
+        ButtonVariant.Ghost => "text-text-secondary hover:bg-white/5 hover:text-text",
+        _ => "bg-gold text-on-gold hover:bg-gold-light hover:shadow-gold active:scale-[0.985]"
+    };
+
+    private string SizeClasses => Size switch
+    {
+        ButtonSize.Sm => "px-3 py-2 text-xs",
+        ButtonSize.Lg => "px-8 py-4 text-sm",
+        _ => "px-5 py-3 text-xs"
+    };
+
+    private string Classes =>
+        string.Join(' ', new[] { Base, VariantClasses, SizeClasses, Class }.Where(c => !string.IsNullOrWhiteSpace(c)));
+}
