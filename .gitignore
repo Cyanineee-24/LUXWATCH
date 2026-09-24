@@ -1,0 +1,18 @@
+# Build folders
+bin/
+obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Publish output
+Publish/
+publish/
+
+# Mac
+.DS_Store
