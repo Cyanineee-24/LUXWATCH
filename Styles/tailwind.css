@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* Where Tailwind should look for class names (paths relative to this file) */
+@source "../**/*.razor";
+@source "../wwwroot/index.html";
+
+/* ============================================================
+   DESIGN TOKENS
+   `static` keeps every variable in the output (Blazor's loading UI
+   in app.css reads some of them before any utility uses them).
+   Utility names come from the token names:
+     bg-bg, bg-surface, bg-panel, bg-field, text-text, text-text-muted,
+     text-gold, border-border, rounded-md, shadow-soft, font-display ...
+   ============================================================ */
+@theme static {
+  /* Background & surfaces */
+  --color-bg: #0c1018;        /* page base */
+  --color-header: #0f1319;    /* navbar / footer */
+  --color-panel: #0f1420;     /* auth form panels */
+  --color-surface: #141c2b;   /* cards */
+  --color-field: #1a1f2e;     /* inputs, checkboxes */
+
+  /* Text (all pass WCAG AA on bg / surface / panel) */
+  --color-text: #e8e6e3;
+  --color-text-secondary: #b0b8c9;
+  --color-text-muted: #8a93a6;
+
+  /* Accent: single champagne gold */
+  --color-gold: #d4a94a;
+  --color-gold-light: #e0bc66;
+  --color-gold-dark: #c9a227;
+  --color-on-gold: #0a0e1a;   /* text placed on gold backgrounds */
+
+  /* Borders (subtle) */
+  --color-border: #1e2536;
+  --color-border-strong: #2a3148;
+
+  /* Icons */
+  --color-icon: #5e8bc7;
+
+  /* Feedback (defined now for Phase 2) */
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+
+  /* Typography */
+  --font-display: "Playfair Display SC", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Radius scale */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Shadows */
+  --shadow-soft: 0 4px 24px rgb(0 0 0 / 0.3);
+  --shadow-gold: 0 4px 20px rgb(212 169 74 / 0.25);
+
+  /* Layout: max-w-page */
+  --container-page: 87.5rem; /* 1400px */
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-bg);
+  }
+
+  /* Visible keyboard focus everywhere by default */
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  /* Blazor's FocusOnNavigate focuses the h1 programmatically; don't outline it */
+  h1[tabindex="-1"]:focus,
+  h1[tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+
+  /* Tailwind v4 preflight uses the default cursor on buttons */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}

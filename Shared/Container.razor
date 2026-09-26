@@ -1,0 +1,11 @@
+<div @attributes="AdditionalAttributes" class="@Classes">@ChildContent</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string Classes =>
+        string.Join(' ', new[] { "mx-auto w-full max-w-page px-5 sm:px-8 lg:px-12", Class }
+            .Where(c => !string.IsNullOrWhiteSpace(c)));
+}
