@@ -1,13 +1,40 @@
 @page "/"
+@inject IJSRuntime JS
 
 <PageTitle>LuxWatch — The Million Dollar Men's Choice</PageTitle>
 
 <!-- HERO -->
-<section class="relative flex min-h-[420px] items-center overflow-hidden bg-[url('/images/landing_page_hero_art.jpg')] bg-cover bg-center md:h-[56vh] md:max-h-155 md:bg-right"
-         aria-label="Featured collection">
-    <div class="absolute inset-0 bg-linear-to-r from-bg/95 via-bg/80 to-bg/40 md:from-bg/90 md:via-bg/60 md:to-bg/5" aria-hidden="true"></div>
+<section id="hero-section"
+         class="relative flex min-h-[460px] md:h-[62vh] md:min-h-[500px] md:max-h-[640px] items-center overflow-hidden bg-bg"
+         aria-label="Featured collection"
+         onmousemove="luxLuster.onMouseMove(event, 'hero-luster', 'hero-image')"
+         onmouseleave="luxLuster.onMouseLeave('hero-luster', 'hero-image')">
 
-    <Container Class="relative z-10 py-16">
+    <!-- High-res Macro Gold Watch Background Art (Rule of Thirds, Nano Banana Pro Extended) -->
+    <div id="hero-image"
+         class="absolute inset-0 bg-[url('/images/landing_page_hero_macro.jpg')] bg-cover bg-no-repeat bg-[position:center_center] md:bg-[position:right_center] transition-transform duration-700 ease-out will-change-transform"
+         aria-hidden="true">
+    </div>
+
+    <!-- Warm Ambient Gold Radial Glow behind the watches -->
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_78%_50%,rgba(212,169,74,0.18)_0%,rgba(224,188,102,0.06)_38%,transparent_68%)] mix-blend-screen"
+         aria-hidden="true"></div>
+
+    <!-- Minimal Gold Luster Shimmer & Dynamic Specular Glint -->
+    <div id="hero-luster"
+         class="pointer-events-none absolute inset-0 overflow-hidden mix-blend-color-dodge opacity-85"
+         aria-hidden="true">
+        <!-- 7.5s Periodic Metallic Light-Sweep Sheen -->
+        <div class="gold-shimmer-sheen"></div>
+        <!-- Cursor-driven specular highlight -->
+        <div class="gold-specular-glint"></div>
+    </div>
+
+    <!-- Typography Legibility Gradient on Left -->
+    <div class="pointer-events-none absolute inset-0 bg-linear-to-r from-bg/95 via-bg/85 to-transparent md:w-[60%] lg:w-[50%]"
+         aria-hidden="true"></div>
+
+    <Container Class="relative z-10 py-16 md:py-24">
         <div class="max-w-xl">
             <p class="mb-4 text-sm font-light tracking-wide text-gold">The Million Dollar Men's Choice</p>
             <h1 class="mb-8 font-display text-4xl font-bold leading-tight tracking-wide text-text md:text-5xl">
@@ -18,35 +45,343 @@
     </Container>
 </section>
 
-<!-- STATS / TRUST -->
-<PageSection Title="The Leading Marketplace for Luxury Watches Since 2003" Centered="true">
-    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Trust and marketplace statistics">
-        @foreach (var stat in Stats)
-        {
-            <li>
-                <Card Hoverable="true" Class="h-full text-center">
-                    <div class="mx-auto mb-4 size-12 text-icon [&>svg]:size-full" aria-hidden="true">@((MarkupString)stat.IconSvg)</div>
-                    <p class="text-xl font-bold italic leading-snug text-text">@stat.Number</p>
-                    <p class="mt-2 text-sm text-text-muted">@stat.Description</p>
-                </Card>
-            </li>
-        }
-    </ul>
-</PageSection>
+<!-- ═══════════════════════════════════════════════════════════
+     POPULAR BRANDS (Chrono24 2-row layout, 5 cols per page)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="py-10 md:py-14" aria-labelledby="popular-brands-heading"
+         onmousemove="luxCarousel.checkArrowHover(event, 'brands-left-arrow', 'brands-right-arrow')"
+         onmouseleave="luxCarousel.hideArrows('brands-left-arrow', 'brands-right-arrow')">
+    <Container>
+        <h2 id="popular-brands-heading" class="mb-8 font-sans text-2xl font-semibold leading-tight text-text md:text-3xl whitespace-nowrap">
+            Popular brands
+        </h2>
+
+        <div class="relative">
+            <!-- Left arrow (shows when cursor is near left arrow location) -->
+            <button type="button"
+                    id="brands-left-arrow"
+                    class="carousel-arrow-btn -left-3 md:-left-4"
+                    onclick="luxCarousel.scroll('brands-carousel', -1)"
+                    aria-label="Scroll brands left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+
+            <!-- 2-page brand grid: each page is 100% width, 5 cols × 2 rows on desktop -->
+            <div id="brands-carousel"
+                 onscroll="luxCarousel.onScroll('brands-carousel', 'brands-seg')"
+                 class="scrollbar-none flex w-full overflow-x-auto scroll-smooth snap-x snap-mandatory">
+                
+                <!-- Page 1: First 10 brands -->
+                <div class="brand-page grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    @foreach (var brand in Brands.Take(10))
+                    {
+                        <a href="/brands/@(brand.ToLower().Replace(" ", "-"))"
+                           class="flex h-[52px] items-center justify-center rounded-lg border border-border bg-[#131c2b] px-4 font-sans text-sm font-medium text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:text-text">
+                            @brand
+                        </a>
+                    }
+                </div>
+
+                <!-- Page 2: Next 10 brands -->
+                <div class="brand-page grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    @foreach (var brand in Brands.Skip(10).Take(10))
+                    {
+                        <a href="/brands/@(brand.ToLower().Replace(" ", "-"))"
+                           class="flex h-[52px] items-center justify-center rounded-lg border border-border bg-[#131c2b] px-4 font-sans text-sm font-medium text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:text-text">
+                            @brand
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Right arrow (shows when cursor is near right arrow location) -->
+            <button type="button"
+                    id="brands-right-arrow"
+                    class="carousel-arrow-btn -right-3 md:-right-4"
+                    onclick="luxCarousel.scroll('brands-carousel', 1)"
+                    aria-label="Scroll brands right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Chrono24 2-Segment Progress Indicator -->
+        <div class="mt-6 flex items-center justify-center gap-1.5" aria-label="Brand carousel pages">
+            <button type="button"
+                    id="brands-seg-0"
+                    onclick="luxCarousel.goToPage('brands-carousel', 0)"
+                    class="h-1 w-10 rounded-full bg-[#3b82f6] transition-colors duration-200 cursor-pointer"
+                    aria-label="Go to brands page 1"></button>
+            <button type="button"
+                    id="brands-seg-1"
+                    onclick="luxCarousel.goToPage('brands-carousel', 1)"
+                    class="h-1 w-10 rounded-full bg-[#242d3f] transition-colors duration-200 cursor-pointer"
+                    aria-label="Go to brands page 2"></button>
+        </div>
+
+        <div class="carousel-action mt-8 text-center">
+            <a href="/brands"
+               class="inline-flex items-center justify-center rounded-lg border border-border bg-transparent px-8 py-2.5 font-sans text-sm font-medium text-text transition-all duration-200 hover:border-gold/40 hover:bg-surface">
+                Display all
+            </a>
+        </div>
+    </Container>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATS / TRUST (Chrono24 style: single line heading, human line-art graphics)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="py-10 md:py-14" aria-labelledby="stats-heading">
+    <Container>
+        <h2 id="stats-heading" class="mb-8 font-sans text-2xl font-semibold leading-tight text-text md:text-3xl whitespace-nowrap">
+            The Leading Marketplace for Luxury Watches Since 2003
+        </h2>
+
+        <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 font-sans" aria-label="Trust and marketplace statistics">
+            @foreach (var stat in Stats)
+            {
+                <li>
+                    <Card Hoverable="true" Class="h-full flex flex-col items-center p-6 text-center font-sans">
+                        <!-- Chrono24 Line-Art Illustration (Direct on card, no badge box) -->
+                        <div class="mb-5 flex h-24 w-full items-center justify-center">
+                            @((MarkupString)stat.IconSvg)
+                        </div>
+
+                        <!-- Number: fixed min-height ensures horizontal alignment -->
+                        <div class="flex min-h-[36px] w-full items-center justify-center">
+                            <p class="font-sans text-xl md:text-2xl font-bold tracking-tight text-text">
+                                @stat.Number
+                            </p>
+                        </div>
+
+                        <!-- Description: fixed min-height ensures horizontal alignment -->
+                        <div class="mt-2 flex min-h-[40px] w-full items-start justify-center">
+                            <p class="font-sans text-xs md:text-sm font-normal text-text-muted leading-relaxed">
+                                @stat.Description
+                            </p>
+                        </div>
+                    </Card>
+                </li>
+            }
+        </ul>
+    </Container>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     BUYER PROTECTION
+     ═══════════════════════════════════════════════════════════ -->
+<section class="py-12 md:py-20" aria-labelledby="buyer-protection-heading">
+    <Container>
+        <div class="overflow-hidden rounded-xl border border-border shadow-soft md:grid md:grid-cols-2">
+            <!-- Left column — content -->
+            <div class="flex flex-col justify-between bg-panel p-8 md:p-12">
+                <div>
+                    <h2 id="buyer-protection-heading"
+                        class="mb-8 font-display text-2xl font-semibold leading-snug text-text md:text-3xl">
+                        LUXWATCH BUYER PROTECTION
+                    </h2>
+
+                    <ul class="space-y-4" aria-label="Buyer protection features">
+                        @foreach (var feature in BuyerProtectionFeatures)
+                        {
+                            <li class="flex items-start gap-3">
+                                <svg class="mt-0.5 size-5 shrink-0 text-gold" viewBox="0 0 20 20" fill="none"
+                                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <polyline points="4 10 8 14 16 6" />
+                                </svg>
+                                <span class="text-sm text-text-secondary">@feature</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                <div class="mt-8">
+                    <Button Href="/security" Variant="ButtonVariant.Secondary" Size="ButtonSize.Md">
+                        Learn more about security on LuxWatch
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Right column — image -->
+            <div class="relative min-h-[280px] md:min-h-0">
+                <img src="/images/buyer_protection_hero.jpg"
+                     alt="A man browsing LuxWatch on his laptop from the comfort of his home"
+                     class="absolute inset-0 size-full object-cover" />
+            </div>
+        </div>
+    </Container>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     REVIEWS (Chrono24 3-card layout, 3 cards visible at a time)
+     ═══════════════════════════════════════════════════════════ -->
+<section class="py-12 md:py-20" aria-labelledby="reviews-heading"
+         onmousemove="luxCarousel.checkArrowHover(event, 'reviews-left-arrow', 'reviews-right-arrow')"
+         onmouseleave="luxCarousel.hideArrows('reviews-left-arrow', 'reviews-right-arrow')">
+    <Container>
+        <header class="mb-8">
+            <h2 id="reviews-heading" class="mb-8 font-sans text-2xl font-semibold leading-tight text-text md:text-3xl whitespace-nowrapl">
+                What thousands of happy customers are saying about us
+            </h2>
+            <div class="flex items-center gap-2 text-sm text-text-secondary">
+                <svg class="size-4 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                </svg>
+                <span>TrustScore: <strong class="text-text">"Excellent"</strong> with <strong class="text-text">4.7/5 stars</strong></span>
+            </div>
+            <p class="mt-1 text-xs text-text-muted">204,925 reviews from around the globe</p>
+        </header>
+
+        <div class="relative">
+            <!-- Left arrow (shows when cursor is near left arrow location) -->
+            <button type="button"
+                    id="reviews-left-arrow"
+                    class="carousel-arrow-btn -left-3 md:-left-4"
+                    onclick="luxCarousel.scroll('reviews-carousel', -1)"
+                    aria-label="Scroll reviews left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+
+            <!-- Review cards strip (3 cards visible at a time on desktop) -->
+            <div id="reviews-carousel"
+                 onscroll="luxCarousel.onScroll('reviews-carousel', 'reviews-seg')"
+                 class="scrollbar-none flex w-full gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-2">
+                @foreach (var review in Reviews)
+                {
+                    <article class="review-card flex shrink-0 snap-start flex-col justify-between rounded-xl border border-border bg-[#131c2b] p-6 shadow-soft md:p-8"
+                             style="min-height: 290px;"
+                             aria-label="Review by @review.Name">
+                        <div>
+                            <!-- Star badge + timestamp -->
+                            <div class="mb-4 flex items-center justify-between">
+                                <div class="flex items-center gap-0.5 rounded bg-[#1e2d4a] px-2 py-1" aria-label="5 out of 5 stars">
+                                    @for (int i = 0; i < 5; i++)
+                                    {
+                                        <svg class="size-3.5 text-white fill-current" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                                        </svg>
+                                    }
+                                </div>
+                                <span class="text-xs text-text-muted">@review.Timestamp</span>
+                            </div>
+
+                            <!-- Blockquote with quotation marks -->
+                            <blockquote class="my-4">
+                                <span class="mr-1 font-serif text-lg font-bold text-text-secondary select-none">“</span>
+                                <span class="text-sm italic leading-relaxed text-text/90">@review.Text</span>
+                                <span class="ml-1 font-serif text-lg font-bold text-text-secondary select-none">”</span>
+                            </blockquote>
+                        </div>
+
+                        <!-- Reviewer profile (pinned to bottom-left) -->
+                        <footer class="mt-6 flex items-center gap-3">
+                            <div class="grid size-9 place-items-center rounded-full bg-[#1e2d4a] text-sm font-semibold text-text"
+                                 aria-hidden="true">
+                                @review.Name[0]
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-text">@review.Name</p>
+                                <p class="text-xs text-text-muted">@review.Country</p>
+                            </div>
+                        </footer>
+                    </article>
+                }
+            </div>
+
+            <!-- Right arrow (shows when cursor is near right arrow location) -->
+            <button type="button"
+                    id="reviews-right-arrow"
+                    class="carousel-arrow-btn -right-3 md:-right-4"
+                    onclick="luxCarousel.scroll('reviews-carousel', 1)"
+                    aria-label="Scroll reviews right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Chrono24 2-Segment Progress Indicator -->
+        <div class="mt-6 flex items-center justify-center gap-1.5" aria-label="Review carousel pages">
+            <button type="button"
+                    id="reviews-seg-0"
+                    onclick="luxCarousel.goToPage('reviews-carousel', 0)"
+                    class="h-1 w-10 rounded-full bg-[#3b82f6] transition-colors duration-200 cursor-pointer"
+                    aria-label="Go to reviews page 1"></button>
+            <button type="button"
+                    id="reviews-seg-1"
+                    onclick="luxCarousel.goToPage('reviews-carousel', 1)"
+                    class="h-1 w-10 rounded-full bg-[#242d3f] transition-colors duration-200 cursor-pointer"
+                    aria-label="Go to reviews page 2"></button>
+        </div>
+    </Container>
+</section>
 
 @code {
+    // ── Brands carousel navigation ──
+    private async Task ScrollBrandsLeft() => await JS.InvokeVoidAsync("luxCarousel.scroll", "brands-carousel", -1);
+    private async Task ScrollBrandsRight() => await JS.InvokeVoidAsync("luxCarousel.scroll", "brands-carousel", 1);
+
+    // ── Reviews carousel navigation ──
+    private async Task ScrollReviewsLeft() => await JS.InvokeVoidAsync("luxCarousel.scroll", "reviews-carousel", -1);
+    private async Task ScrollReviewsRight() => await JS.InvokeVoidAsync("luxCarousel.scroll", "reviews-carousel", 1);
+
+    // ── Brands (20 brands: 2 rows × 5 columns per page) ──
+    private static readonly string[] Brands = {
+        "Rolex", "Patek Philippe", "Audemars Piguet", "Panerai", "Breitling",
+        "Omega", "Seiko", "TAG Heuer", "IWC", "Tudor",
+        "Cartier", "Vacheron Constantin", "Jaeger-LeCoultre", "Hublot", "Zenith",
+        "Breguet", "Blancpain", "Grand Seiko", "Richard Mille", "Chopard"
+    };
+
+    // ── Buyer Protection features ──
+    private static readonly string[] BuyerProtectionFeatures = {
+        "Payment via the Escrow Service",
+        "Commitment to Authenticity",
+        "Global money-back guarantee",
+        "Strict dealer guidelines",
+        "Insured shipments",
+        "LuxWatch's quality & security team"
+    };
+
+    // ── Stat cards ──
     private record Stat(string Number, string Description, string IconSvg);
 
-    // Stat data — trivial to reorder or bind to a CMS/API later.
     private List<Stat> Stats { get; } = new()
     {
         new Stat("4.7 out of 5 stars", "from 204,000 reviews worldwide",
-            "<svg viewBox='0 0 48 48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='18' cy='16' r='6'/><path d='M6 40c0-6.6 5.4-12 12-12s12 6.6 12 12'/><path d='M32 18a5 5 0 1 1 0-10'/><path d='M36 40c0-5-2.8-9.3-7-11.5'/></svg>"),
-        new Stat("9 Million", "watch enthusiasts use Chrono24 each month",
-            "<svg viewBox='0 0 48 48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='24' cy='24' r='16'/><path d='M24 14v10l7 7'/><path d='M17 42.5c2.1 1 4.5 1.5 7 1.5s4.9-.5 7-1.5'/><path d='M24 42v4'/><circle cx='24' cy='24' r='2'/></svg>"),
+            "<svg viewBox='8 10 58 56' class='h-20 w-auto md:h-22' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M20 28c-1-8 6-14 14-14 7.5 0 13 5 13.5 12.5' stroke='#ffffff' stroke-width='2'/><path d='M21 27c2-3.5 6-4.5 11.5-3 3.5 1 7 0 11-2.5' stroke='#ffffff' stroke-width='2'/><path d='M21.5 27c-2 0-2 4.5 0 4.5' stroke='#ffffff' stroke-width='2'/><path d='M46.5 27c2 0 2 4.5 0 4.5' stroke='#ffffff' stroke-width='2'/><path d='M21.5 28c0 7 4.5 13 12.5 13s12.5-6 12.5-13' stroke='#ffffff' stroke-width='2'/><path d='M30 41v5' stroke='#ffffff' stroke-width='2'/><path d='M38 41v5' stroke='#ffffff' stroke-width='2'/><path d='M30 46l4 4 4-4' stroke='#ffffff' stroke-width='2'/><path d='M30 46l-5 2.5' stroke='#ffffff' stroke-width='2'/><path d='M38 46l5 2.5' stroke='#ffffff' stroke-width='2'/><path d='M25 48.5c-6 2.5-10.5 6.5-13.5 12.5' stroke='#ffffff' stroke-width='2'/><path d='M43 48.5c6 2.5 10.5 6.5 13.5 12.5' stroke='#ffffff' stroke-width='2'/><path d='M52 30.5l-5 3.5 1.8-4.5A9.5 9.5 0 1 1 54 30.2z' stroke='#3b82f6' stroke-width='2' fill='none'/><polygon points='53.5,15.5 54.7,18.5 57.8,18.7 55.3,20.7 56.3,23.8 53.5,22 50.7,23.8 51.7,20.7 49.2,18.7 52.3,18.5' stroke='#3b82f6' stroke-width='1.6' stroke-linejoin='round' fill='none'/></svg>"),
+        new Stat("9 Million", "watch enthusiasts use LuxWatch each month",
+            "<svg viewBox='18 4 45 72' class='h-20 w-auto md:h-22' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M31 23V8c0-1.5 1.5-2.5 3-2.5h12c1.5 0 3 1 3 2.5v15' stroke='#ffffff' stroke-width='2'/><path d='M31 14h18' stroke='#ffffff' stroke-width='1.6'/><path d='M31 57v15c0 1.5 1.5 2.5 3 2.5h12c1.5 0 3-1 3-2.5V57' stroke='#ffffff' stroke-width='2'/><path d='M31 66h18' stroke='#ffffff' stroke-width='1.6'/><circle cx='40' cy='61.5' r='1' fill='#ffffff'/><circle cx='40' cy='70.5' r='1' fill='#ffffff'/><circle cx='40' cy='40' r='18.5' stroke='#ffffff' stroke-width='2'/><circle cx='40' cy='40' r='14.5' stroke='#ffffff' stroke-width='1.2' stroke-opacity='0.5'/><rect x='58.5' y='37.5' width='3.5' height='5' rx='1.2' stroke='#ffffff' stroke-width='1.8' fill='#ffffff'/><path d='M40 46.5s-7-4.5-7-8c0-2.3 1.8-4.2 4.2-4.2 1.5 0 2.8.9 2.8 1.9 0-1 1.3-1.9 2.8-1.9 2.4 0 4.2 1.9 4.2 4.2 0 3.5-7 8-7 8z' stroke='#3b82f6' stroke-width='2' stroke-linejoin='round'/><circle cx='40' cy='29.5' r='1' fill='#ffffff'/><circle cx='40' cy='50.5' r='1' fill='#ffffff'/><circle cx='29.5' cy='40' r='1' fill='#ffffff'/><circle cx='50.5' cy='40' r='1' fill='#ffffff'/></svg>"),
         new Stat("Over 340,000", "customers choose Buyer Protection annually",
-            "<svg viewBox='0 0 48 48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M12 28h8l3-6 4 12 3-6h6'/><circle cx='24' cy='24' r='18'/></svg>"),
+            "<svg viewBox='6 6 60 56' class='h-20 w-auto md:h-22' fill='none' stroke-linecap='round' stroke-linejoin='round'><circle cx='36' cy='18' r='9.5' stroke='#3b82f6' stroke-width='2'/><polyline points='32 18 35 21 41 15' stroke='#3b82f6' stroke-width='2'/><rect x='10' y='35' width='5.5' height='17' rx='1.2' stroke='#ffffff' stroke-width='2'/><rect x='56.5' y='35' width='5.5' height='17' rx='1.2' stroke='#ffffff' stroke-width='2'/><path d='M15.5 39h6.5l6-3.5c2.5-1.5 5.5-1.5 8 0l4 2.5 8.5-2.5h8' stroke='#ffffff' stroke-width='2'/><path d='M15.5 48h5.5l8 5.5c3 2 7 2 10 0l8-5.5h9.5' stroke='#ffffff' stroke-width='2'/><path d='M33 41.5l4 4' stroke='#ffffff' stroke-width='2'/><path d='M29 44.5l4 4' stroke='#ffffff' stroke-width='2'/><path d='M25 47.5l4 4' stroke='#ffffff' stroke-width='2'/><path d='M37 38.5l4 4' stroke='#ffffff' stroke-width='2'/></svg>"),
         new Stat("More Than 25,000", "trustworthy sellers",
-            "<svg viewBox='0 0 48 48' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='18' cy='16' r='6'/><path d='M6 40c0-6.6 5.4-12 12-12s12 6.6 12 12'/><path d='M34 16l3 3 6-6'/></svg>"),
+            "<svg viewBox='6 12 64 54' class='h-20 w-auto md:h-22' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M17 28c-1-7 5-13 12-13 6.5 0 11.5 4.5 12 11.5' stroke='#ffffff' stroke-width='2'/><path d='M18 27c2-3 5.5-4 10-2.5 3 1 6 0 9.5-2' stroke='#ffffff' stroke-width='2'/><path d='M18 27c-1.8 0-1.8 4 0 4' stroke='#ffffff' stroke-width='2'/><path d='M40 27c1.8 0 1.8 4 0 4' stroke='#ffffff' stroke-width='2'/><path d='M18 28c0 6.5 4 11.5 11 11.5s11-5 11-11.5' stroke='#ffffff' stroke-width='2'/><path d='M25 39.5v4' stroke='#ffffff' stroke-width='2'/><path d='M33 39.5v4' stroke='#ffffff' stroke-width='2'/><path d='M25 43.5l4 3.5 4-3.5' stroke='#ffffff' stroke-width='2'/><path d='M25 43.5l-4 2' stroke='#ffffff' stroke-width='2'/><path d='M33 43.5l4 2' stroke='#ffffff' stroke-width='2'/><path d='M21 45.5c-5 2-9 5.5-12 10.5' stroke='#ffffff' stroke-width='2'/><path d='M37 45.5c4 2 7.5 4.5 10 8.5' stroke='#ffffff' stroke-width='2'/><polygon points='46,50 56,45 66,48 56,53' stroke='#ffffff' stroke-width='2' stroke-linejoin='round'/><path d='M46 50v2.5l10 3 10-3v-2.5' stroke='#ffffff' stroke-width='2' stroke-linejoin='round'/><path d='M56 49v-11' stroke='#ffffff' stroke-width='2'/><circle cx='56' cy='28' r='6.5' stroke='#3b82f6' stroke-width='2'/><path d='M56 25v3l2.5 1.5' stroke='#3b82f6' stroke-width='1.6'/><path d='M53 23c0-3.5 6-3.5 6 0' stroke='#ffffff' stroke-width='2'/><path d='M53 33c0 3.5 6 3.5 6 0' stroke='#ffffff' stroke-width='2'/></svg>"),
+    };
+
+    // ── Review data (6 cards: exactly 3 visible at a time, scroll to see next 3) ──
+    private record Review(string Name, string Country, string Timestamp, string Text);
+
+    private static readonly Review[] Reviews = {
+        new("Malissa White", "United States of America", "Yesterday",
+            "Watch exceeded expectations! Great communicate and support. Watch shipped and received within days."),
+        new("B Cowan", "United States of America", "Yesterday",
+            "The process was very easy and transparent. I was nervous about buying from an international seller but the C24 certification and buyer assurance gave me peace of mind. I liked the secure communic..."),
+        new("HOSSAM ELYAFE", "United States of America", "Yesterday",
+            "Easy and straight forward. Ordered my Zombie and got during 5 business days. Everything matches the listing."),
+        new("James Chen", "Singapore", "2 days ago",
+            "Outstanding service from start to finish. The authentication process was thorough and gave me complete confidence in my purchase."),
+        new("Marcus Rivera", "Germany", "3 days ago",
+            "Bought my dream Submariner through LuxWatch. Seamless transaction, insured shipping, and the watch arrived in perfect condition. Highly recommend."),
+        new("Alexander Frost", "United Kingdom", "Last week",
+            "The escrow service is brilliant. Felt completely safe purchasing a high-value timepiece from overseas. Will definitely buy again."),
     };
 }
