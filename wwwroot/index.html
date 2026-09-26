@@ -34,6 +34,128 @@
         <a class="dismiss">🗙</a>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
+
+    <!-- UI Interaction Scripts -->
+    <script>
+        window.luxCarousel = {
+            scroll: function (containerId, direction) {
+                const el = document.getElementById(containerId);
+                if (!el) return;
+                el.scrollBy({ left: direction * el.clientWidth, behavior: 'smooth' });
+            },
+            goToPage: function (containerId, pageIndex) {
+                const el = document.getElementById(containerId);
+                if (!el) return;
+                const maxScroll = el.scrollWidth - el.clientWidth;
+                const targetLeft = pageIndex === 0 ? 0 : maxScroll;
+                el.scrollTo({ left: targetLeft, behavior: 'smooth' });
+            },
+            onScroll: function (containerId, segPrefix) {
+                const el = document.getElementById(containerId);
+                if (!el) return;
+                const maxScroll = el.scrollWidth - el.clientWidth;
+                if (maxScroll <= 0) return;
+                const progress = el.scrollLeft / maxScroll;
+                const activeIndex = progress >= 0.5 ? 1 : 0;
+                const seg0 = document.getElementById(segPrefix + '-0');
+                const seg1 = document.getElementById(segPrefix + '-1');
+                if (seg0 && seg1) {
+                    if (activeIndex === 0) {
+                        seg0.style.backgroundColor = '#3b82f6';
+                        seg1.style.backgroundColor = '#242d3f';
+                    } else {
+                        seg0.style.backgroundColor = '#242d3f';
+                        seg1.style.backgroundColor = '#3b82f6';
+                    }
+                }
+            },
+            checkArrowHover: function (e, leftBtnId, rightBtnId) {
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                const threshold = 140; // Proximity threshold in pixels from button center
+
+                const leftBtn = document.getElementById(leftBtnId);
+                if (leftBtn) {
+                    const rect = leftBtn.getBoundingClientRect();
+                    const btnX = rect.left + rect.width / 2;
+                    const btnY = rect.top + rect.height / 2;
+                    const dist = Math.hypot(mouseX - btnX, mouseY - btnY);
+                    if (dist <= threshold) {
+                        leftBtn.classList.add('is-visible');
+                    } else {
+                        leftBtn.classList.remove('is-visible');
+                    }
+                }
+
+                const rightBtn = document.getElementById(rightBtnId);
+                if (rightBtn) {
+                    const rect = rightBtn.getBoundingClientRect();
+                    const btnX = rect.left + rect.width / 2;
+                    const btnY = rect.top + rect.height / 2;
+                    const dist = Math.hypot(mouseX - btnX, mouseY - btnY);
+                    if (dist <= threshold) {
+                        rightBtn.classList.add('is-visible');
+                    } else {
+                        rightBtn.classList.remove('is-visible');
+                    }
+                }
+            },
+            hideArrows: function (leftBtnId, rightBtnId) {
+                const leftBtn = document.getElementById(leftBtnId);
+                const rightBtn = document.getElementById(rightBtnId);
+                if (leftBtn) leftBtn.classList.remove('is-visible');
+                if (rightBtn) rightBtn.classList.remove('is-visible');
+            }
+        };
+
+        window.luxLuster = {
+            onMouseMove: function (e, lusterId, imageId) {
+                const luster = document.getElementById(lusterId);
+                const hero = e.currentTarget;
+                if (!hero) return;
+                const rect = hero.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const pctX = (mouseX / rect.width) * 100;
+                const pctY = (mouseY / rect.height) * 100;
+
+                if (luster) {
+                    luster.style.setProperty('--specular-x', pctX + '%');
+                    luster.style.setProperty('--specular-y', pctY + '%');
+                    luster.style.setProperty('--specular-opacity', '0.7');
+                }
+
+                const img = document.getElementById(imageId);
+                if (img) {
+                    const moveX = (pctX - 50) * 0.06;
+                    const moveY = (pctY - 50) * 0.06;
+                    img.style.transform = `scale(1.015) translate3d(${moveX}px, ${moveY}px, 0)`;
+                }
+            },
+            onMouseLeave: function (lusterId, imageId) {
+                const luster = document.getElementById(lusterId);
+                if (luster) {
+                    luster.style.setProperty('--specular-opacity', '0');
+                }
+                const img = document.getElementById(imageId);
+                if (img) {
+                    img.style.transform = 'scale(1) translate3d(0, 0, 0)';
+                }
+            }
+        };
+
+        // Backward compatibility
+        function updateCarouselProgress(el, barId, barWidthPercent) {
+            const maxScroll = el.scrollWidth - el.clientWidth;
+            if (maxScroll <= 0) return;
+            const scrollPercent = el.scrollLeft / maxScroll;
+            const progressEl = document.getElementById(barId);
+            if (progressEl) {
+                const maxLeft = 100 - barWidthPercent;
+                progressEl.style.left = `${scrollPercent * maxLeft}%`;
+            }
+        }
+    </script>
 </body>
 
 </html>

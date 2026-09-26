@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
-/* Where Tailwind should look for class names (paths relative to this file) */
-@source "../**/*.razor";
-@source "../wwwroot/index.html";
+@source "..";
 
 /* ============================================================
    DESIGN TOKENS
@@ -96,3 +94,86 @@
     cursor: pointer;
   }
 }
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+@utility scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Review Cards: Exactly 3 visible at a time on desktop, 1 on mobile */
+.review-card {
+  width: 100%;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .review-card {
+    width: calc((100% - 32px) / 3);
+  }
+}
+
+/* ============================================================
+   GOLD LUSTER & METALLIC SHEEN EFFECTS
+   ============================================================ */
+@keyframes goldSheen {
+  0% {
+    transform: translate3d(-100%, -50%, 0) rotate(25deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  26% {
+    transform: translate3d(80%, 40%, 0) rotate(25deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(80%, 40%, 0) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+.gold-shimmer-sheen {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 250%;
+  height: 250%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 42%,
+    rgba(224, 188, 102, 0.15) 47%,
+    rgba(255, 248, 220, 0.45) 50%,
+    rgba(224, 188, 102, 0.25) 53%,
+    transparent 58%,
+    transparent 100%
+  );
+  animation: goldSheen 7.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  mix-blend-mode: color-dodge;
+}
+
+.gold-specular-glint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle 240px at var(--specular-x, 75%) var(--specular-y, 50%),
+    rgba(255, 240, 200, 0.4) 0%,
+    rgba(212, 169, 74, 0.18) 35%,
+    transparent 70%
+  );
+  opacity: var(--specular-opacity, 0);
+  transition: opacity 0.4s ease-out;
+  mix-blend-mode: color-dodge;
+}
+

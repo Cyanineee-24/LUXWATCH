@@ -57,3 +57,69 @@
 .loading-progress-text::after {
     content: var(--blazor-load-percentage-text, "Loading");
 }
+
+/* ============================================================
+   CHRONO24-STYLE CAROUSEL & CARD LAYOUTS
+   ============================================================ */
+
+/* Review cards: Exactly 3 visible at a time on desktop, 1 on mobile */
+.review-card {
+    width: 100%;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+    .review-card {
+        width: calc((100% - 32px) / 3);
+    }
+}
+
+/* Brand carousel pages: 100% viewport width, 10 items (5 cols x 2 rows) */
+.brand-page {
+    width: 100%;
+    min-width: 100%;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    box-sizing: border-box;
+}
+
+/* Arrow buttons: centered vertically, hidden until cursor is near */
+.carousel-arrow-btn {
+    position: absolute;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background-color: rgba(15, 20, 32, 0.95);
+    color: var(--color-text);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    cursor: pointer;
+    transition: opacity 0.25s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.carousel-arrow-btn:hover {
+    border-color: rgba(212, 169, 74, 0.5);
+    background-color: #1a2234;
+}
+
+.carousel-arrow-btn.is-visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+/* Carousel action container (e.g. Display all button) */
+.carousel-action {
+    margin-top: 2rem; /* 32px significant medium gap */
+    text-align: center;
+}
