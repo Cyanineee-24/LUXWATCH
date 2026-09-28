@@ -1,0 +1,69 @@
+@if (Interactive)
+{
+    <div role="radiogroup" aria-label="@Label" class="inline-flex items-center gap-1 @Class" @onmouseleave="ClearHover">
+        @for (int i = 1; i <= 5; i++)
+        {
+            var star = i;
+            var isFilled = (hoverValue ?? (int)Math.Round(Value)) >= star;
+            <button type="button"
+                    role="radio"
+                    aria-checked="@(Value == star ? "true" : "false")"
+                    aria-label="@($"{star} star{(star > 1 ? "s" : "")}")"
+                    class="border-0 bg-transparent p-0 transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold rounded-sm @(isFilled ? "text-gold" : "text-border-strong")"
+                    @onmouseover="() => SetHover(star)"
+                    @onclick="() => SelectStar(star)">
+                <svg style="width: @(Size)px; height: @(Size)px;" viewBox="0 0 20 20" fill="currentColor" class="shrink-0" aria-hidden="true">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                </svg>
+            </button>
+        }
+    </div>
+}
+else
+{
+    <div class="relative inline-flex items-center @Class" role="img" aria-label="Rated @Value out of 5">
+        <!-- Five gray stars underneath -->
+        <div class="flex items-center text-border-strong" aria-hidden="true">
+            @for (int i = 0; i < 5; i++)
+            {
+                <svg style="width: @(Size)px; height: @(Size)px;" viewBox="0 0 20 20" fill="currentColor" class="shrink-0">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                </svg>
+            }
+        </div>
+
+        <!-- Five gold stars overlay with fractional width -->
+        <div class="absolute inset-y-0 left-0 overflow-hidden text-gold"
+             style="width: @((Math.Clamp(Value / 5.0 * 100, 0, 100)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;"
+             aria-hidden="true">
+            <div class="flex items-center" style="width: @(Size * 5)px;">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <svg style="width: @(Size)px; height: @(Size)px;" viewBox="0 0 20 20" fill="currentColor" class="shrink-0">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                    </svg>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public double Value { get; set; }
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    [Parameter] public bool Interactive { get; set; } = false;
+    [Parameter] public int Size { get; set; } = 16;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private int? hoverValue;
+
+    private void SetHover(int star) => hoverValue = star;
+    private void ClearHover() => hoverValue = null;
+
+    private async Task SelectStar(int star)
+    {
+        Value = star;
+        await ValueChanged.InvokeAsync(star);
+    }
+}

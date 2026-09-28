@@ -1,0 +1,76 @@
+@{
+    var inputId = Id ?? autoId;
+    var errorId = $"{inputId}-error";
+    var helpId = $"{inputId}-help";
+    var hasError = !string.IsNullOrWhiteSpace(ErrorText);
+    var hasHelp = !string.IsNullOrWhiteSpace(HelperText);
+    string? describedBy = hasError ? errorId : (hasHelp ? helpId : null);
+}
+
+<div class="@Class">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label for="@inputId" class="mb-2 block text-sm font-medium text-text">@Label</label>
+    }
+
+    <div class="relative">
+        <textarea @attributes="AdditionalAttributes"
+                  id="@inputId"
+                  value="@Value"
+                  @oninput="HandleInput"
+                  placeholder="@Placeholder"
+                  rows="@Rows"
+                  maxlength="@(MaxLength > 0 ? MaxLength : null)"
+                  required="@Required"
+                  disabled="@Disabled"
+                  aria-invalid="@(hasError ? "true" : null)"
+                  aria-describedby="@describedBy"
+                  class="@InputClasses(hasError)"></textarea>
+    </div>
+
+    @if (hasError)
+    {
+        <p id="@errorId" role="alert" class="mt-1.5 text-xs text-error">@ErrorText</p>
+    }
+    else if (hasHelp)
+    {
+        <p id="@helpId" class="mt-1.5 text-xs text-text-muted">@HelperText</p>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public int Rows { get; set; } = 5;
+    [Parameter] public int? MaxLength { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private readonly string autoId = $"textarea-{Guid.NewGuid():N}";
+
+    private Task HandleInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? string.Empty;
+        return ValueChanged.InvokeAsync(Value);
+    }
+
+    private static string InputClasses(bool hasError)
+    {
+        const string baseClasses =
+            "w-full rounded-md border bg-field px-4 py-3 text-sm text-text placeholder:text-text-muted/70 " +
+            "transition-colors focus-visible:outline-none focus:ring-3 disabled:cursor-not-allowed disabled:opacity-50 resize-y";
+
+        var state = hasError
+            ? "border-error focus:border-error focus:ring-error/25"
+            : "border-border-strong focus:border-gold focus:ring-gold/25";
+
+        return $"{baseClasses} {state}";
+    }
+}

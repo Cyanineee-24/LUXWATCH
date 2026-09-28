@@ -1,0 +1,616 @@
+@page "/watch/{Slug}"
+@using System.Globalization
+@implements IDisposable
+@inject ReviewService ReviewService
+@inject NavigationManager Nav
+
+@if (watch is null)
+{
+    <PageTitle>Listing Not Found — LuxWatch</PageTitle>
+    <Container Class="py-20 text-center">
+        <h1 class="font-display text-3xl font-bold text-text mb-4">Listing not found</h1>
+        <p class="text-text-muted mb-8">The watch listing you are looking for does not exist or has been removed.</p>
+        <Button Href="/" Variant="ButtonVariant.Primary">Back to Home</Button>
+    </Container>
+}
+else
+{
+    <PageTitle>@watch.Brand @watch.Model — LuxWatch</PageTitle>
+
+    <Container Class="py-8 md:py-12">
+        <!-- 1. Success banner (only when reviewed=true in query string) -->
+        @if (Reviewed && !bannerDismissed)
+        {
+            <div role="status" class="mb-6 flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
+                <div class="flex items-center gap-2">
+                    <svg class="size-4 shrink-0 text-success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Thanks, your review is now live.</span>
+                </div>
+                <button type="button"
+                        @onclick="() => bannerDismissed = true"
+                        aria-label="Dismiss notification"
+                        class="rounded p-1 text-success/80 hover:bg-success/20 hover:text-success transition-colors">
+                    <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                    </svg>
+                </button>
+            </div>
+        }
+
+        <!-- 2. Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-6 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+            <a href="/" class="transition-colors hover:text-text">Home</a>
+            <span aria-hidden="true">›</span>
+            <a href="/brands/@(watch.Brand.ToLower().Replace(" ", "-"))" class="transition-colors hover:text-text">@watch.Brand watches</a>
+            <span aria-hidden="true">›</span>
+            <span class="text-text-secondary">@watch.Model</span>
+            <span aria-hidden="true">›</span>
+            <span class="text-text font-medium" aria-current="page">@watch.Reference</span>
+        </nav>
+
+        <!-- 3. Two-column grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8 lg:gap-10 items-start">
+            <!-- LEFT: Gallery -->
+            <div>
+                <div class="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-[#131c2b]">
+                    <img src="@CurrentMainImage"
+                         alt="@watch.Brand @watch.Model"
+                         class="h-full w-full object-cover" />
+
+                    <!-- Top right actions (Share & Heart) -->
+                    <div class="absolute right-3 top-3 flex items-center gap-2">
+                        <button type="button"
+                                aria-label="Share listing"
+                                class="grid size-9 place-items-center rounded-full border border-border bg-header/80 text-text backdrop-blur transition-colors hover:text-gold">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                        </button>
+
+                        <button type="button"
+                                @onclick="() => isFavorite = !isFavorite"
+                                aria-label="@(isFavorite ? "Remove from favorites" : "Add to favorites")"
+                                aria-pressed="@(isFavorite ? "true" : "false")"
+                                class="grid size-9 place-items-center rounded-full border border-border bg-header/80 text-text backdrop-blur transition-colors hover:text-gold">
+                            <svg width="18" height="18" viewBox="0 0 24 24"
+                                 fill="@(isFavorite ? "currentColor" : "none")"
+                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 class="@(isFavorite ? "text-gold" : "text-text")" aria-hidden="true">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thumbnails row -->
+                <div class="mt-4 grid grid-cols-5 gap-2 sm:gap-3" role="group" aria-label="Watch image gallery thumbnails">
+                    @for (int i = 0; i < watch.Images.Length; i++)
+                    {
+                        var index = i;
+                        var isSelected = selectedImageIndex == index;
+                        <button type="button"
+                                @onclick="() => selectedImageIndex = index"
+                                aria-label="@($"View image {index + 1}")"
+                                class="aspect-square overflow-hidden rounded-lg border transition-all @(isSelected ? "border-gold ring-2 ring-gold/40 shadow-gold" : "border-border hover:border-border-strong opacity-75 hover:opacity-100")">
+                            <img src="@watch.Images[index]" alt="" class="h-full w-full object-cover" />
+                        </button>
+                    }
+                </div>
+
+                <!-- Sell & report links -->
+                <div class="mt-4 space-y-2 text-xs text-text-muted">
+                    <div class="flex items-center gap-2">
+                        <svg class="size-4 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="3" y1="21" x2="21" y2="21"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                            <polygon points="12 3 2 10 22 10 12 3"/>
+                            <line x1="5" y1="10" x2="5" y2="21"/>
+                            <line x1="10" y1="10" x2="10" y2="21"/>
+                            <line x1="14" y1="10" x2="14" y2="21"/>
+                            <line x1="19" y1="10" x2="19" y2="21"/>
+                        </svg>
+                        <span>Want to sell a similar watch? <a href="/sell" class="underline hover:text-text">Create a listing now</a></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="size-4 shrink-0 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                            <line x1="4" y1="22" x2="4" y2="15"/>
+                        </svg>
+                        <button type="button" class="underline hover:text-text bg-transparent border-0 p-0 text-xs text-text-muted">Report listing</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Info -->
+            <div class="space-y-6">
+                <div>
+                    <!-- Views counter -->
+                    <div class="mb-3 flex items-center gap-1.5 text-xs text-text-muted">
+                        <svg class="size-3.5 text-gold shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                        </svg>
+                        <span>@watch.ViewsIn48h.ToString("N0", CultureInfo.InvariantCulture) views in 48 hours</span>
+                    </div>
+
+                    <h1 class="font-display text-3xl font-bold tracking-wide text-text md:text-4xl">
+                        @watch.Brand @watch.Model
+                    </h1>
+                    <p class="mt-1 text-sm text-text-secondary">@watch.Subtitle</p>
+
+                    <!-- Meta line -->
+                    <p class="mt-4 text-xs leading-relaxed text-text-muted">
+                        @watch.Condition | Year of production @watch.Year | @(watch.HasBox ? "Original box" : "No original box") | @(watch.HasPapers ? "Original papers" : "No original papers")
+                    </p>
+                </div>
+
+                <!-- Price -->
+                <div>
+                    <span class="text-xs uppercase tracking-wider text-text-muted">Price</span>
+                    <p class="font-sans text-3xl font-bold tracking-tight text-text">
+                        PHP @watch.PricePhp.ToString("N0", CultureInfo.InvariantCulture)
+                    </p>
+                </div>
+
+                <!-- Delivery card (panel style) -->
+                <div class="rounded-lg border border-border bg-[#0f1420] p-4 text-xs leading-relaxed">
+                    <div class="flex items-center gap-2 font-semibold text-text">
+                        <svg class="size-4 shrink-0 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="1" y="3" width="15" height="13"/>
+                            <polygon points="16 8 20 8 23 11 23 16 16 16 8"/>
+                            <circle cx="5.5" cy="18.5" r="2.5"/>
+                            <circle cx="18.5" cy="18.5" r="2.5"/>
+                        </svg>
+                        <span>Insured delivery to the Philippines</span>
+                    </div>
+                    <p class="mt-1 pl-6 text-text-muted">
+                        Shipped by the dealer with tracking. Payment is held in escrow until delivery.
+                    </p>
+                </div>
+
+                <!-- Buy button -->
+                <div class="space-y-2">
+                    <Button Variant="ButtonVariant.Primary"
+                            Size="ButtonSize.Lg"
+                            Class="w-full"
+                            OnClick="() => showBuyNotice = true">
+                        BUY
+                    </Button>
+                    @if (showBuyNotice)
+                    {
+                        <div role="status" class="rounded-md border border-border-strong bg-field p-3 text-xs text-text-secondary">
+                            Checkout arrives in a later update. This page is a preview of the listing.
+                        </div>
+                    }
+                </div>
+
+                <!-- Divider & Shipping and seller information -->
+                <div class="border-t border-border pt-6 space-y-4">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                        Shipping and seller information
+                    </h2>
+
+                    <div class="space-y-1 text-xs text-text-muted">
+                        <p class="text-text font-medium">Item is in stock</p>
+                        <p>Anticipated delivery: @watch.DeliveryWindow</p>
+                    </div>
+
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <a href="#about-dealer" class="font-semibold text-text underline hover:text-gold transition-colors text-sm">
+                                @watch.Dealer.Name
+                            </a>
+                            <p class="text-xs text-text-muted mt-0.5">Professional dealer · @watch.Dealer.Country</p>
+                        </div>
+
+                        <!-- Gold star, average and total reviews link -->
+                        <div class="flex items-center gap-1.5 shrink-0 text-sm">
+                            <svg class="size-4 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                            </svg>
+                            <span class="font-bold text-text">@ReviewService.Format(ReviewService.Average)</span>
+                            <a href="#reviews" class="text-xs text-text-secondary hover:text-gold underline">(@ReviewService.Total)</a>
+                        </div>
+                    </div>
+
+                    <!-- 3 Circular icon badges (34px) -->
+                    <div class="flex items-center gap-3 pt-1">
+                        <div class="size-[34px] rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon" title="Trusted seller">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div class="size-[34px] rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon" title="Fast shipper">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </div>
+                        <div class="size-[34px] rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon" title="Punctuality">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <Button Variant="ButtonVariant.Secondary" Class="w-full">
+                        Contact seller
+                    </Button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. More about this listing -->
+        <section class="mt-16 border-t border-border pt-12" aria-labelledby="more-about-heading">
+            <h2 id="more-about-heading" class="font-display text-2xl font-bold tracking-wide text-text md:text-3xl">
+                More about this listing
+            </h2>
+            <p class="mt-4 text-sm leading-relaxed text-text-secondary max-w-4xl">
+                @watch.Description
+            </p>
+
+            <div class="mt-8 border-t border-border">
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-12">
+                    @foreach (var spec in watch.Specs)
+                    {
+                        <div class="flex items-center justify-between border-b border-border/60 py-3 text-xs">
+                            <dt class="text-text-muted">@spec.Key</dt>
+                            <dd class="font-medium text-text text-right">@spec.Value</dd>
+                        </div>
+                    }
+                </dl>
+            </div>
+        </section>
+
+        <!-- 5. About the dealer card -->
+        <section id="about-dealer" class="mt-16 scroll-mt-24" aria-labelledby="about-dealer-heading">
+            <Card Class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 id="about-dealer-heading" class="font-display text-xl font-bold text-text">
+                            @watch.Dealer.Name
+                        </h2>
+                        <p class="text-xs text-text-muted mt-1">
+                            Professional dealer | On LuxWatch since @watch.Dealer.Since · @watch.Dealer.Country
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-6 rounded-lg border border-border bg-[#0f1420] px-4 py-2.5 text-center">
+                        <div>
+                            <div class="text-base font-bold text-text">@watch.Dealer.WatchesSold</div>
+                            <div class="text-[10px] uppercase tracking-wider text-text-muted">watches sold</div>
+                        </div>
+                        <div class="h-8 w-px bg-border"></div>
+                        <div>
+                            <div class="text-base font-bold text-text">@watch.Dealer.ActiveListings</div>
+                            <div class="text-[10px] uppercase tracking-wider text-text-muted">active listings</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border pt-4 text-xs">
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon shrink-0">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-text">Trusted seller</div>
+                            <div class="text-text-muted">Verified dealer status</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon shrink-0">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-text">Fast shipper</div>
+                            <div class="text-text-muted">@watch.Dealer.ShipsWithin</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="size-8 rounded-full border border-icon/40 bg-surface flex items-center justify-center text-icon shrink-0">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-text">Response time</div>
+                            <div class="text-text-muted">@watch.Dealer.RespondsWithin</div>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+        </section>
+
+        <!-- 6. Dealer reviews section -->
+        <section id="reviews" class="mt-16 scroll-mt-24 border-t border-border pt-12" aria-labelledby="dealer-reviews-heading">
+            <h2 id="dealer-reviews-heading" class="mb-8 font-display text-2xl font-bold tracking-wide text-text md:text-3xl">
+                Dealer reviews (@ReviewService.Total)
+            </h2>
+
+            <!-- Left summary + Right distribution bars -->
+            <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <!-- Left summary -->
+                <div>
+                    <div class="flex items-center gap-3">
+                        <svg class="size-8 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                        </svg>
+                        <span class="font-display text-4xl font-bold text-text">@ReviewService.Format(ReviewService.Average)</span>
+                    </div>
+
+                    <div class="mt-4 space-y-1.5 text-xs text-text-secondary">
+                        <p>@ReviewService.Format(ReviewService.ShippingAvg) Shipping</p>
+                        <p>@ReviewService.Format(ReviewService.ItemAvg) Item description</p>
+                        <p>@ReviewService.Format(ReviewService.CommunicationAvg) Communication</p>
+                    </div>
+
+                    <div class="mt-4 flex items-center gap-2 text-xs font-semibold text-text">
+                        <svg class="size-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                        </svg>
+                        <span>@ReviewService.RecommendCount buyers recommend this dealer</span>
+                    </div>
+
+                    <p class="mt-2 text-xs text-text-muted flex items-center gap-1.5">
+                        <svg class="size-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>Only buyers who completed a trade can review this dealer.</span>
+                    </p>
+                </div>
+
+                <!-- Right: Distribution bars -->
+                <div class="space-y-2 text-xs">
+                    @for (int s = 5; s >= 1; s--)
+                    {
+                        var star = s;
+                        var count = ReviewService.CountFor(star);
+                        var pct = ReviewService.Total > 0 ? (double)count / ReviewService.Total * 100 : 0;
+                        <div class="flex items-center gap-3">
+                            <span class="w-12 text-text-muted">@star star@(star > 1 ? "s" : "")</span>
+                            <div class="h-2 flex-1 rounded-full bg-border overflow-hidden">
+                                <div class="h-full bg-gold rounded-full transition-all duration-300"
+                                     style="width: @(pct.ToString("0.##", CultureInfo.InvariantCulture))%"></div>
+                            </div>
+                            <span class="w-8 text-right font-mono text-text-muted">@count</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Rate card: Demo trigger -->
+            <!-- Demo trigger: in real product, this appears after delivery from Track a Trade -->
+            <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border bg-[#0f1420] p-6 shadow-soft">
+                <div>
+                    <h3 class="font-semibold text-text">Received your watch?</h3>
+                    <p class="text-xs text-text-muted mt-1">Tell other collectors how the trade went.</p>
+                </div>
+                <Button Href="@($"/watch/{Slug}/rate")" Variant="ButtonVariant.Primary" Class="shrink-0">
+                    Rate this dealer
+                </Button>
+            </div>
+
+            <!-- Filter and sort row -->
+            <div class="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                <select class="rounded-md border border-border-strong bg-field px-4 py-2.5 text-xs text-text focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/25"
+                        @bind="SelectedFilter">
+                    <option value="all">All stars</option>
+                    <option value="5">5 stars</option>
+                    <option value="4">4 stars</option>
+                    <option value="3">3 stars</option>
+                    <option value="2">2 stars</option>
+                    <option value="1">1 star</option>
+                </select>
+
+                <select class="rounded-md border border-border-strong bg-field px-4 py-2.5 text-xs text-text focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/25"
+                        @bind="SelectedSort">
+                    <option value="newest">Sort by: Newest</option>
+                    <option value="highest">Sort by: Highest rated</option>
+                    <option value="lowest">Sort by: Lowest rated</option>
+                    <option value="helpful">Sort by: Most helpful</option>
+                </select>
+            </div>
+
+            <!-- Reviews list -->
+            @{
+                var filtered = FilteredReviews.ToList();
+                var displayed = filtered.Take(visibleCount).ToList();
+            }
+
+            @if (filtered.Count == 0)
+            {
+                <div class="py-12 text-center text-xs text-text-muted">
+                    No reviews match this filter.
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    @foreach (var review in displayed)
+                    {
+                        <article class="rounded-xl border border-border bg-[#131c2b] p-6 shadow-soft space-y-4">
+                            <!-- Top user info -->
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <!-- Initials avatar -->
+                                    <div class="size-9 shrink-0 rounded-full bg-[#1e2d4a] font-bold text-xs text-text flex items-center justify-center">
+                                        @GetInitials(review.Author)
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5 text-xs font-semibold text-text">
+                                            <svg class="size-3.5 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                                            </svg>
+                                            <span>@review.Overall.ToString("0.0", CultureInfo.InvariantCulture)</span>
+                                            <span>@review.Author</span>
+                                        </div>
+                                        <p class="text-[11px] text-text-muted mt-0.5">
+                                            @review.Country · @review.Date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture) · Verified purchase
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bordered watch purchased box -->
+                            <div class="flex items-center gap-3 rounded-md border border-border-strong bg-[#0f1420] px-3 py-2 text-xs text-text-secondary">
+                                <div class="size-7 shrink-0 rounded bg-field border border-border overflow-hidden flex items-center justify-center">
+                                    <svg class="size-4 text-text-muted opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="7"/>
+                                        <polyline points="12 9 12 12 13.5 13.5"/>
+                                        <path d="M12 2v3M12 19v3"/>
+                                    </svg>
+                                </div>
+                                <span>@review.WatchPurchased</span>
+                            </div>
+
+                            <!-- Recommends statement -->
+                            <p class="text-xs font-semibold text-text">
+                                @($"{review.Author} {(review.Recommends ? "recommends" : "does not recommend")} this dealer")
+                            </p>
+
+                            <!-- Comment text -->
+                            <p class="text-xs leading-relaxed text-text/90">
+                                @review.Comment
+                            </p>
+
+                            <!-- Helpful button -->
+                            <div class="flex justify-end pt-1">
+                                <button type="button"
+                                        @onclick="() => MarkHelpful(review)"
+                                        disabled="@helpfulMarked.Contains(review.Id)"
+                                        class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-text-muted transition-colors hover:text-text disabled:cursor-default disabled:opacity-50">
+                                    <span>Helpful?</span>
+                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                                    </svg>
+                                    <span>@review.Helpful</span>
+                                </button>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                @if (filtered.Count > visibleCount)
+                {
+                    <div class="mt-8 text-center">
+                        <Button Variant="ButtonVariant.Secondary" OnClick="() => visibleCount += 5">
+                            Show more reviews
+                        </Button>
+                    </div>
+                }
+            }
+        </section>
+    </Container>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+    [SupplyParameterFromQuery(Name = "reviewed")] public bool Reviewed { get; set; }
+
+    private Watch? watch;
+    private int selectedImageIndex = 0;
+    private bool isFavorite = false;
+    private bool showBuyNotice = false;
+    private bool bannerDismissed = false;
+
+    private string selectedFilter = "all";
+    private string SelectedFilter
+    {
+        get => selectedFilter;
+        set
+        {
+            selectedFilter = value;
+            visibleCount = 5;
+        }
+    }
+
+    private string selectedSort = "newest";
+    private string SelectedSort
+    {
+        get => selectedSort;
+        set
+        {
+            selectedSort = value;
+            visibleCount = 5;
+        }
+    }
+
+    private int visibleCount = 5;
+    private readonly HashSet<Guid> helpfulMarked = new();
+
+    private string CurrentMainImage =>
+        watch?.Images is { Length: > 0 } && selectedImageIndex < watch.Images.Length
+            ? watch.Images[selectedImageIndex]
+            : "/images/landing_page_hero_macro.jpg";
+
+    protected override void OnInitialized()
+    {
+        ReviewService.OnChange += OnReviewServiceChanged;
+        watch = SampleData.Find(Slug);
+    }
+
+    protected override void OnParametersSet()
+    {
+        watch = SampleData.Find(Slug);
+    }
+
+    private void OnReviewServiceChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ReviewService.OnChange -= OnReviewServiceChanged;
+    }
+
+    private IEnumerable<Review> FilteredReviews
+    {
+        get
+        {
+            var query = ReviewService.All;
+
+            if (int.TryParse(selectedFilter, out int stars))
+            {
+                query = query.Where(r => r.Overall == stars);
+            }
+
+            return selectedSort switch
+            {
+                "highest" => query.OrderByDescending(r => r.Overall),
+                "lowest" => query.OrderBy(r => r.Overall),
+                "helpful" => query.OrderByDescending(r => r.Helpful),
+                _ => query.OrderByDescending(r => r.Date)
+            };
+        }
+    }
+
+    private void MarkHelpful(Review review)
+    {
+        if (helpfulMarked.Add(review.Id))
+        {
+            ReviewService.MarkHelpful(review);
+        }
+    }
+
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "LW";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Length >= 2 ? parts[0][..2].ToUpperInvariant() : parts[0].ToUpperInvariant();
+        return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[^1][0])}";
+    }
+}

@@ -1,0 +1,327 @@
+@page "/watch/{Slug}/rate"
+@using System.Globalization
+@inject NavigationManager Nav
+@inject ReviewService ReviewService
+
+@if (watch is null)
+{
+    <PageTitle>Listing Not Found — LuxWatch</PageTitle>
+    <Container Class="py-20 text-center">
+        <h1 class="font-display text-3xl font-bold text-text mb-4">Listing not found</h1>
+        <p class="text-text-muted mb-8">The watch listing you are looking for does not exist or has been removed.</p>
+        <Button Href="/" Variant="ButtonVariant.Primary">Back to Home</Button>
+    </Container>
+}
+else
+{
+    <PageTitle>Rate your dealer — @watch.Brand @watch.Model — LuxWatch</PageTitle>
+
+    <Container Class="py-8 md:py-12">
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb" class="mb-6 flex items-center gap-2 text-xs text-text-muted">
+            <a href="/watch/@Slug" class="transition-colors hover:text-text">Watch listing</a>
+            <span aria-hidden="true">›</span>
+            <span class="text-text" aria-current="page">Rate your dealer</span>
+        </nav>
+
+        <h1 class="mb-8 font-display text-3xl font-bold tracking-wide text-text md:text-4xl">
+            Rate your dealer
+        </h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-8 items-start">
+            <!-- LEFT: Trade summary card (static, hardcoded completed order) -->
+            <Card Class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
+                        <span class="size-1.5 rounded-full bg-success"></span>
+                        Delivered Sep 21, 2026
+                    </span>
+                    <span class="text-xs text-text-muted">Verified Order</span>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <img src="@(watch.Images.FirstOrDefault() ?? "/images/landing_page_hero_macro.jpg")"
+                         alt="@watch.Brand @watch.Model"
+                         class="size-20 shrink-0 rounded-md border border-border object-cover bg-field" />
+                    <div>
+                        <h2 class="font-display text-base font-bold text-text">@watch.Brand @watch.Model</h2>
+                        <p class="text-xs text-text-muted">Ref. @watch.Reference · @watch.Condition</p>
+                        <p class="mt-1 font-semibold text-gold">PHP @watch.PricePhp.ToString("N0", CultureInfo.InvariantCulture)</p>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-border/60 border-y border-border/60 text-xs">
+                    <div class="flex items-center justify-between py-3">
+                        <span class="text-text-muted">Dealer</span>
+                        <span class="font-medium text-text">@watch.Dealer.Name</span>
+                    </div>
+                    <div class="flex items-center justify-between py-3">
+                        <span class="text-text-muted">Order</span>
+                        <span class="font-mono text-text">LW-2026-0412</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-text-muted">
+                    Only completed trades can be reviewed.
+                </p>
+            </Card>
+
+            <!-- RIGHT: Form card -->
+            <Card>
+                <form @onsubmit="HandleSubmit" @onsubmit:preventDefault class="space-y-6" novalidate>
+                    <!-- 1. Overall experience -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-text">Overall experience</label>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <StarRating Value="@overall"
+                                        ValueChanged="OnOverallChanged"
+                                        Interactive="true"
+                                        Size="30"
+                                        Label="Overall rating" />
+                            <span class="text-sm font-medium @(overall > 0 ? "text-gold" : "text-text-muted")">
+                                @RatingWord(overall)
+                            </span>
+                        </div>
+                    </div>
+
+                    <hr class="border-border" />
+
+                    <!-- 2. Rate the details -->
+                    <div class="space-y-4">
+                        <p class="text-sm font-semibold text-text">Rate the details</p>
+
+                        <!-- Shipping -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                            <span class="text-xs text-text-secondary">Shipping</span>
+                            <div class="flex items-center gap-3">
+                                <StarRating Value="@shipping"
+                                            ValueChanged="OnShippingChanged"
+                                            Interactive="true"
+                                            Size="18"
+                                            Label="Shipping rating" />
+                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(shipping)</span>
+                            </div>
+                        </div>
+
+                        <!-- Item as described -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                            <span class="text-xs text-text-secondary">Item as described</span>
+                            <div class="flex items-center gap-3">
+                                <StarRating Value="@itemAsDescribed"
+                                            ValueChanged="OnItemAsDescribedChanged"
+                                            Interactive="true"
+                                            Size="18"
+                                            Label="Item as described rating" />
+                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(itemAsDescribed)</span>
+                            </div>
+                        </div>
+
+                        <!-- Communication -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span class="text-xs text-text-secondary">Communication</span>
+                            <div class="flex items-center gap-3">
+                                <StarRating Value="@communication"
+                                            ValueChanged="OnCommunicationChanged"
+                                            Interactive="true"
+                                            Size="18"
+                                            Label="Communication rating" />
+                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(communication)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-border" />
+
+                    <!-- 3. Would you recommend this dealer? -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-text">Would you recommend this dealer?</label>
+                        <div class="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Recommend this dealer">
+                            <button type="button"
+                                    role="radio"
+                                    aria-checked="@(recommends ? "true" : "false")"
+                                    class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
+                                    @onclick="() => SetRecommends(true)">
+                                Yes
+                            </button>
+                            <button type="button"
+                                    role="radio"
+                                    aria-checked="@(!recommends ? "true" : "false")"
+                                    class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(!recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
+                                    @onclick="() => SetRecommends(false)">
+                                No
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. Your comment -->
+                    <div class="space-y-1">
+                        <Textarea Id="review-comment"
+                                  Label="Your comment"
+                                  Rows="5"
+                                  MaxLength="500"
+                                  Placeholder="Describe your experience with the dealer, condition of the watch, shipping packaging, etc."
+                                  Value="@comment"
+                                  ValueChanged="OnCommentChanged" />
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-text-muted">Minimum 10 characters</span>
+                            <span class="@(comment.Length >= 500 ? "text-error font-medium" : "text-text-muted")">
+                                @comment.Length/500
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 5. Error alert area -->
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div role="alert" class="rounded-md border border-error/50 bg-error/10 p-3 text-xs text-error">
+                            @errorMessage
+                        </div>
+                    }
+
+                    <!-- 6. Submit Button -->
+                    <Button Type="submit"
+                            Size="ButtonSize.Lg"
+                            Class="w-full"
+                            Disabled="@isSubmitting">
+                        Submit review
+                    </Button>
+                </form>
+            </Card>
+        </div>
+    </Container>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    private Watch? watch;
+
+    private int overall = 0;
+    private int shipping = 0;
+    private int itemAsDescribed = 0;
+    private int communication = 0;
+    private bool recommends = true;
+    private string comment = string.Empty;
+
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    protected override void OnInitialized()
+    {
+        watch = SampleData.Find(Slug);
+    }
+
+    protected override void OnParametersSet()
+    {
+        watch = SampleData.Find(Slug);
+    }
+
+    private void ClearError() => errorMessage = null;
+
+    private void OnOverallChanged(double val)
+    {
+        overall = (int)val;
+        ClearError();
+    }
+
+    private void OnShippingChanged(double val)
+    {
+        shipping = (int)val;
+        ClearError();
+    }
+
+    private void OnItemAsDescribedChanged(double val)
+    {
+        itemAsDescribed = (int)val;
+        ClearError();
+    }
+
+    private void OnCommunicationChanged(double val)
+    {
+        communication = (int)val;
+        ClearError();
+    }
+
+    private void SetRecommends(bool value)
+    {
+        recommends = value;
+        ClearError();
+    }
+
+    private void OnCommentChanged(string val)
+    {
+        comment = val;
+        ClearError();
+    }
+
+    private static string RatingWord(int rating) => rating switch
+    {
+        1 => "Poor",
+        2 => "Fair",
+        3 => "Good",
+        4 => "Very good",
+        5 => "Excellent",
+        _ => "Select a rating"
+    };
+
+    private static string DetailRatingWord(int rating) => rating switch
+    {
+        1 => "Poor",
+        2 => "Fair",
+        3 => "Good",
+        4 => "Very good",
+        5 => "Excellent",
+        _ => string.Empty
+    };
+
+    private void HandleSubmit()
+    {
+        if (isSubmitting) return;
+
+        if (overall == 0)
+        {
+            errorMessage = "Select an overall rating.";
+            return;
+        }
+
+        if (shipping == 0 || itemAsDescribed == 0 || communication == 0)
+        {
+            errorMessage = "Rate shipping, item as described, and communication.";
+            return;
+        }
+
+        if (comment.Trim().Length < 10)
+        {
+            errorMessage = "Write at least 10 characters in your comment.";
+            return;
+        }
+
+        isSubmitting = true;
+
+        try
+        {
+            // TODO: use the logged-in user
+            var newReview = new Review
+            {
+                Author = "Marcus V.",
+                Country = "PH",
+                Date = DateOnly.FromDateTime(DateTime.Today),
+                Overall = overall,
+                Shipping = shipping,
+                ItemAsDescribed = itemAsDescribed,
+                Communication = communication,
+                Recommends = recommends,
+                Comment = comment.Trim(),
+                WatchPurchased = "Rolex Submariner (No Date) 14060",
+                Helpful = 0
+            };
+
+            ReviewService.Add(newReview);
+            Nav.NavigateTo($"/watch/{Slug}?reviewed=true#reviews");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
