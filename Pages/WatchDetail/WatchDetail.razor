@@ -15,7 +15,7 @@
 }
 else
 {
-    <PageTitle>@watch.Brand @watch.Model — LuxWatch</PageTitle>
+    <PageTitle>@watch.Brand.Name @watch.Model — LuxWatch</PageTitle>
 
     <Container Class="py-8 md:py-12">
         <!-- 1. Success banner (only when reviewed=true in query string) -->
@@ -43,7 +43,7 @@ else
         <nav aria-label="Breadcrumb" class="mb-6 flex flex-wrap items-center gap-2 text-xs text-text-muted">
             <a href="/" class="transition-colors hover:text-text">Home</a>
             <span aria-hidden="true">›</span>
-            <a href="/brands/@(watch.Brand.ToLower().Replace(" ", "-"))" class="transition-colors hover:text-text">@watch.Brand watches</a>
+            <a href="/brands/@watch.Brand.Slug" class="transition-colors hover:text-text">@watch.Brand.Name watches</a>
             <span aria-hidden="true">›</span>
             <span class="text-text-secondary">@watch.Model</span>
             <span aria-hidden="true">›</span>
@@ -56,7 +56,7 @@ else
             <div>
                 <div class="relative aspect-square w-full overflow-hidden rounded-xl border border-border bg-[#131c2b]">
                     <img src="@CurrentMainImage"
-                         alt="@watch.Brand @watch.Model"
+                         alt="@watch.Brand.Name @watch.Model"
                          class="h-full w-full object-cover" />
 
                     <!-- Top right actions (Share & Heart) -->
@@ -90,7 +90,7 @@ else
 
                 <!-- Thumbnails row -->
                 <div class="mt-4 grid grid-cols-5 gap-2 sm:gap-3" role="group" aria-label="Watch image gallery thumbnails">
-                    @for (int i = 0; i < watch.Images.Length; i++)
+                    @for (int i = 0; i < watch.Images.Count; i++)
                     {
                         var index = i;
                         var isSelected = selectedImageIndex == index;
@@ -98,7 +98,7 @@ else
                                 @onclick="() => selectedImageIndex = index"
                                 aria-label="@($"View image {index + 1}")"
                                 class="aspect-square overflow-hidden rounded-lg border transition-all @(isSelected ? "border-gold ring-2 ring-gold/40 shadow-gold" : "border-border hover:border-border-strong opacity-75 hover:opacity-100")">
-                            <img src="@watch.Images[index]" alt="" class="h-full w-full object-cover" />
+                            <img src="@watch.Images[index].Url" alt="" class="h-full w-full object-cover" />
                         </button>
                     }
                 </div>
@@ -139,13 +139,13 @@ else
                     </div>
 
                     <h1 class="font-display text-3xl font-bold tracking-wide text-text md:text-4xl">
-                        @watch.Brand @watch.Model
+                        @watch.Brand.Name @watch.Model
                     </h1>
                     <p class="mt-1 text-sm text-text-secondary">@watch.Subtitle</p>
 
                     <!-- Meta line -->
                     <p class="mt-4 text-xs leading-relaxed text-text-muted">
-                        @watch.Condition | Year of production @watch.Year | @(watch.HasBox ? "Original box" : "No original box") | @(watch.HasPapers ? "Original papers" : "No original papers")
+                        @watch.Condition.Label() | Year of production @watch.Year | @(watch.HasBox ? "Original box" : "No original box") | @(watch.HasPapers ? "Original papers" : "No original papers")
                     </p>
                 </div>
 
@@ -277,7 +277,7 @@ else
                             @watch.Dealer.Name
                         </h2>
                         <p class="text-xs text-text-muted mt-1">
-                            Professional dealer | On LuxWatch since @watch.Dealer.Since · @watch.Dealer.Country
+                            Professional dealer | On LuxWatch since @watch.Dealer.Since.Year · @watch.Dealer.Country
                         </p>
                     </div>
                     <div class="flex items-center gap-6 rounded-lg border border-border bg-[#0f1420] px-4 py-2.5 text-center">
@@ -447,7 +447,7 @@ else
                                 <div class="flex items-center gap-3">
                                     <!-- Initials avatar -->
                                     <div class="size-9 shrink-0 rounded-full bg-[#1e2d4a] font-bold text-xs text-text flex items-center justify-center">
-                                        @GetInitials(review.Author)
+                                        @GetInitials(review.Author.PublicName())
                                     </div>
                                     <div>
                                         <div class="flex items-center gap-1.5 text-xs font-semibold text-text">
@@ -455,10 +455,10 @@ else
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
                                             </svg>
                                             <span>@review.Overall.ToString("0.0", CultureInfo.InvariantCulture)</span>
-                                            <span>@review.Author</span>
+                                            <span>@review.Author.PublicName()</span>
                                         </div>
                                         <p class="text-[11px] text-text-muted mt-0.5">
-                                            @review.Country · @review.Date.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture) · Verified purchase
+                                            @review.Country · @review.CreatedAt.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture) · Verified purchase
                                         </p>
                                     </div>
                                 </div>
@@ -478,7 +478,7 @@ else
 
                             <!-- Recommends statement -->
                             <p class="text-xs font-semibold text-text">
-                                @($"{review.Author} {(review.Recommends ? "recommends" : "does not recommend")} this dealer")
+                                @($"{review.Author.PublicName()} {(review.Recommends ? "recommends" : "does not recommend")} this dealer")
                             </p>
 
                             <!-- Comment text -->
@@ -552,8 +552,8 @@ else
     private readonly HashSet<Guid> helpfulMarked = new();
 
     private string CurrentMainImage =>
-        watch?.Images is { Length: > 0 } && selectedImageIndex < watch.Images.Length
-            ? watch.Images[selectedImageIndex]
+        watch?.Images is { Count: > 0 } && selectedImageIndex < watch.Images.Count
+            ? watch.Images[selectedImageIndex].Url
             : "/images/landing_page_hero_macro.jpg";
 
     protected override void OnInitialized()
@@ -593,7 +593,7 @@ else
                 "highest" => query.OrderByDescending(r => r.Overall),
                 "lowest" => query.OrderBy(r => r.Overall),
                 "helpful" => query.OrderByDescending(r => r.Helpful),
-                _ => query.OrderByDescending(r => r.Date)
+                _ => query.OrderByDescending(r => r.CreatedAt)
             };
         }
     }
