@@ -10,4 +10,17 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddSingleton<LuxWatch.Services.ReviewService>();
 builder.Services.AddSingleton<LuxWatch.Services.IReviewService>(sp => sp.GetRequiredService<LuxWatch.Services.ReviewService>());
 
+// Supabase: one client for the whole app, injected with @inject Supabase.Client.
+// Config comes from wwwroot/appsettings.json (publishable key only — it is public by design).
+var url = builder.Configuration["Supabase:Url"];
+var key = builder.Configuration["Supabase:Key"];
+if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
+    throw new InvalidOperationException(
+        "Supabase:Url / Supabase:Key missing. Put them in wwwroot/appsettings.json.");
+
+var supabase = new Supabase.Client(url, key,
+    new Supabase.SupabaseOptions { AutoConnectRealtime = false });
+await supabase.InitializeAsync();
+builder.Services.AddSingleton(supabase);
+
 await builder.Build().RunAsync();
