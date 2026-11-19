@@ -197,7 +197,16 @@ begin
                              'watch_images', 'orders', 'reviews']
     loop
         execute format('revoke all on public.%I from anon, authenticated', t);
-        execute format('grant select on public.%I to anon, authenticated', t);
+        if t = 'users' then
+            -- email is deliberately not readable with the publishable key:
+            -- column-level grant, so any request for email (or users?select=*)
+            -- is refused with "permission denied".
+            -- (patches/001_users_column_grant.sql applies this to existing projects.)
+            grant select (id, username, full_name, country, created_at)
+                on public.users to anon, authenticated;
+        else
+            execute format('grant select on public.%I to anon, authenticated', t);
+        end if;
         execute format('alter table public.%I enable row level security', t);
         execute format(
             'create policy %I on public.%I for select to anon, authenticated using (true)',

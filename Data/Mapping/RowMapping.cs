@@ -30,7 +30,8 @@ public static class RowMapping
         value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
 
     public static User ToDomain(this UserRow row) =>
-        new(row.Username, row.FullName, row.Email,
+        new(row.Username, row.FullName,
+            email: "",                      // not readable with the publishable key (column grant)
             passwordHash: "",               // no password column: auth moves to Supabase Auth
             country: row.Country ?? "",
             createdAt: AsUtc(row.CreatedAt))

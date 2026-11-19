@@ -12,7 +12,9 @@ Postgres schema and demo data for the Tier 1 tables. The Blazor WebAssembly app 
 3. Paste and run **`seed.sql`**. It loads the demo data in one transaction.
 4. Paste and run **`views.sql`**. It creates the read views `dealer_reviews` and `dealer_stats`.
    - **Run it again after any re-run of `schema.sql`.** The reset drops the tables with `cascade`, which also drops the views.
-5. Test the API with **`test.http`** (VS Code REST Client extension). Fill in the URL and key locally, and don't commit them.
+5. **Patches (`patches/NNN_*.sql`)** are one-off fixes for a project that was **already** set up with an older `schema.sql`. Run any you haven't run yet, in number order. A fresh `schema.sql` already includes them.
+   - `001_users_column_grant.sql`: hides `users.email` from the publishable key.
+6. Test the API with **`test.http`** (VS Code REST Client extension). Fill in the URL and key locally, and don't commit them.
 
 **Where to find the URL and key:** dashboard → **Project Settings → API Keys**. Copy the **Project URL** (`https://<ref>.supabase.co`) and the **Publishable key** (`sb_publishable_…`). The project URL is also shown under **Project Settings → Data API**.
 
@@ -55,7 +57,7 @@ Both views use `security_invoker = true`, so the caller's grants and RLS on the 
 
 ## Security (class policy)
 
-`schema.sql` first revokes Supabase's default privileges. Then every table gets RLS, a `SELECT` grant and a read policy for `anon` and `authenticated`. Only `reviews` can be written:
+`schema.sql` first revokes Supabase's default privileges. Then every table gets RLS, a `SELECT` grant and a read policy for `anon` and `authenticated`. On `users` the grant is **column-level**: `id, username, full_name, country, created_at`. **`email` is not readable** with the publishable key. Only `reviews` can be written:
 - `INSERT` of a whole row (the RateDealer form).
 - `UPDATE` of **only** `helpful_count` and `deleted_at` (a column-level grant). App code must send just those columns, e.g. `.Set(x => x.DeletedAt, …).Update()`, never `.Update(wholeModel)`.
 

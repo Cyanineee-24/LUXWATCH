@@ -53,3 +53,12 @@ apikey: {{key}}
 Content-Type: application/json
 
 { "overall": 1 }
+
+### Public user columns: should be 200
+GET {{url}}/rest/v1/users?select=id,username,full_name
+apikey: {{key}}
+
+### Should FAIL: email is not readable with the publishable key (column grant)
+# Expect 401/403 "permission denied for table users".
+GET {{url}}/rest/v1/users?select=email
+apikey: {{key}}
