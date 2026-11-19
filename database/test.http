@@ -38,6 +38,15 @@ Prefer: return=representation
 
 { "deleted_at": "2026-11-20T00:00:00Z" }
 
+### Dealer reviews (view): visible only, newest first
+# Paste a dealer id, e.g. from: GET {{url}}/rest/v1/dealers?select=id,name
+GET {{url}}/rest/v1/dealer_reviews?dealer_id=eq.PASTE-DEALER-UUID&deleted_at=is.null&order=created_at.desc
+apikey: {{key}}
+
+### Dealer stats (view) for the same dealer
+GET {{url}}/rest/v1/dealer_stats?dealer_id=eq.PASTE-DEALER-UUID
+apikey: {{key}}
+
 ### Should FAIL: editing a rating is not allowed (column-level grant)
 PATCH {{url}}/rest/v1/reviews?id=eq.PASTE-REVIEW-UUID
 apikey: {{key}}

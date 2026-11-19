@@ -10,7 +10,9 @@ Postgres schema and demo data for the Tier 1 tables. The Blazor WebAssembly app 
 2. Paste and run **`schema.sql`**. It creates the tables, constraints, indexes, grants and RLS policies.
    - It starts with a dev-only reset block that drops the 8 tables, so you can re-run it while iterating. **The reset wipes all data.** Run `seed.sql` again afterwards.
 3. Paste and run **`seed.sql`**. It loads the demo data in one transaction.
-4. Test the API with **`test.http`** (VS Code REST Client extension). Fill in the URL and key locally, and don't commit them.
+4. Paste and run **`views.sql`**. It creates the read views `dealer_reviews` and `dealer_stats`.
+   - **Run it again after any re-run of `schema.sql`.** The reset drops the tables with `cascade`, which also drops the views.
+5. Test the API with **`test.http`** (VS Code REST Client extension). Fill in the URL and key locally, and don't commit them.
 
 **Where to find the URL and key:** dashboard → **Project Settings → API Keys**. Copy the **Project URL** (`https://<ref>.supabase.co`) and the **Publishable key** (`sb_publishable_…`). The project URL is also shown under **Project Settings → Data API**.
 
@@ -26,6 +28,11 @@ Postgres schema and demo data for the Tier 1 tables. The Blazor WebAssembly app 
 | `watch_images` | WatchImage | `sort_order` (C# `SortOrder`), many per watch, `on delete cascade`. |
 | `orders` | Order | Minimal: no payment, shipment or authentication yet. A partial unique index allows at most one non-cancelled order per watch. |
 | `reviews` | Review | `helpful_count` replaces the User↔Review "marked helpful" association until auth exists. It will become a `review_helpful (user_id, review_id)` table. Adds `deleted_at` for soft delete. `comment` is required, 10–500 characters, the same rule as `Review.IsValid()`. |
+
+| `dealer_reviews` (view) | Read model, not a UML class | One row per review, joined across reviews → orders → users / watches → brands, so a dealer's reviews load in one request. Includes `deleted_at`; the app filters `deleted_at is null` in its query. |
+| `dealer_stats` (view) | Read model, not a UML class | One row per dealer: active and sold counts, plus rating averages and recommend % from non-deleted reviews. Replaces `Dealer.WatchesSold`, `ActiveListings` and `GetAverageRating()`. |
+
+Both views use `security_invoker = true`, so the caller's grants and RLS on the base tables still apply. They are read-only for `anon` and `authenticated`.
 
 **Ids:** every primary key is `uuid default gen_random_uuid()`, matching the C# `Guid` ids. The seed never hardcodes ids. It looks foreign keys up by natural key (slug, username, dealer name, order number).
 
