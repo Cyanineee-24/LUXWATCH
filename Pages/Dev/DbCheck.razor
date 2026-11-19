@@ -1,61 +1,137 @@
 @page "/dev/db-check"
-@* TEMPORARY (Phase 2): proves the Supabase client can read. Deleted in Phase 3. No Navbar link. *@
+@* TEMPORARY (Phases 2–3): proves the Supabase client and the read repositories work. Deleted in Phase 4. No Navbar link. *@
+@using LuxWatch.Data.Repositories
 @using LuxWatch.Data.Rows
+@using LuxWatch.Models
 @using Supabase.Postgrest
 @inject Supabase.Client Db
+@inject IWatchRepository Watches
+@inject IDealerRepository Dealers
+@inject IReviewReadRepository Reviews
 
 <PageTitle>DB check — LuxWatch</PageTitle>
 
-<Container Class="py-12">
-    <h1 class="mb-6 font-display text-2xl font-bold text-text">Supabase connection check</h1>
+<Container Class="py-12 space-y-8">
+    <h1 class="font-display text-2xl font-bold text-text">Supabase connection check</h1>
 
-    @if (loading)
-    {
-        <p class="text-text-muted">Querying <code>brands</code>…</p>
-    }
-    else if (error is not null)
-    {
-        <div class="rounded-md border border-red-500/50 bg-red-500/10 p-4">
-            <p class="mb-2 font-semibold text-red-400">Connection failed ✗</p>
-            <pre class="whitespace-pre-wrap break-all text-sm text-text">@error</pre>
-        </div>
-    }
-    else
-    {
-        <p class="mb-1 font-semibold text-gold">Connected ✓</p>
-        <p class="mb-4 text-sm text-text-muted">@brands.Count brands returned (expected 20)</p>
-        <ol class="list-decimal space-y-1 pl-6 text-text">
-            @foreach (var b in brands)
-            {
-                <li>@b.Name <span class="text-xs text-text-muted">(@b.Slug)</span></li>
-            }
-        </ol>
-    }
+    @* 0. Raw client (Phase 2) *@
+    <section class="rounded-md border border-border p-4">
+        <h2 class="mb-2 font-semibold text-text">0 · Client: brands</h2>
+        @if (brandsError is not null) { <Err Message="@brandsError" /> }
+        else if (brands is null) { <p class="text-text-muted">Loading…</p> }
+        else
+        {
+            <p class="font-semibold text-gold">Connected ✓</p>
+            <p class="text-sm text-text-muted">@brands.Count brands (expected 20): @string.Join(", ", brands.Select(b => b.Name))</p>
+        }
+    </section>
+
+    @* 1. Paging *@
+    <section class="rounded-md border border-border p-4">
+        <h2 class="mb-2 font-semibold text-text">1 · IWatchRepository.GetActiveAsync</h2>
+        @if (pagingError is not null) { <Err Message="@pagingError" /> }
+        else if (page1 is null || page2 is null) { <p class="text-text-muted">Loading…</p> }
+        else
+        {
+            <ul class="text-sm text-text">
+                <li>Page 1: <b>@page1.Items.Count</b> items, HasNextPage = <b>@page1.HasNextPage</b> <span class="text-text-muted">(expected 12, True)</span></li>
+                <li>Page 2: <b>@page2.Items.Count</b> items, HasNextPage = <b>@page2.HasNextPage</b> <span class="text-text-muted">(expected 12, False)</span></li>
+                <li class="text-text-muted">Newest: @page1.Items[0].Brand.Name @page1.Items[0].Model (@page1.Items[0].ListedDate)</li>
+            </ul>
+        }
+    </section>
+
+    @* 2. Detail *@
+    <section class="rounded-md border border-border p-4">
+        <h2 class="mb-2 font-semibold text-text">2 · IWatchRepository.GetBySlugAsync("rolex-submariner-14060")</h2>
+        @if (watchError is not null) { <Err Message="@watchError" /> }
+        else if (watch is null) { <p class="text-text-muted">@(watchLoaded ? "Not found ✗" : "Loading…")</p> }
+        else
+        {
+            <ul class="text-sm text-text">
+                <li>Brand: <b>@watch.Brand.Name</b> · Dealer: <b>@watch.Dealer.Name</b> (owner @watch.Dealer.Owner.Username)</li>
+                <li>Images: <b>@watch.Images.Count</b> (expected 5) · Specs: <b>@watch.Specs.Count</b> (expected 10)</li>
+                <li>Year: <b>"@watch.Year"</b> (expected "1998 (approx.)") · @watch.Condition.Label() · @watch.Status</li>
+            </ul>
+        }
+    </section>
+
+    @* 3. Dealer stats *@
+    <section class="rounded-md border border-border p-4">
+        <h2 class="mb-2 font-semibold text-text">3 · IDealerRepository.GetStatsAsync(that dealer)</h2>
+        @if (statsError is not null) { <Err Message="@statsError" /> }
+        else if (stats is null) { <p class="text-text-muted">@(statsLoaded ? "No row ✗ (did views.sql run?)" : "Loading…")</p> }
+        else
+        {
+            <ul class="text-sm text-text">
+                <li>Active listings: <b>@stats.ActiveListings</b> · Sold: <b>@stats.WatchesSold</b></li>
+                <li>Reviews: <b>@stats.ReviewCount</b> · Avg overall: <b>@(stats.AvgOverall?.ToString() ?? "–")</b> · Recommend: <b>@(stats.RecommendPct?.ToString() ?? "–")%</b></li>
+            </ul>
+        }
+    </section>
+
+    @* 4. Reviews *@
+    <section class="rounded-md border border-border p-4">
+        <h2 class="mb-2 font-semibold text-text">4 · IReviewReadRepository.GetForDealerAsync(that dealer, 1, 10)</h2>
+        @if (reviewsError is not null) { <Err Message="@reviewsError" /> }
+        else if (reviews is null) { <p class="text-text-muted">Loading…</p> }
+        else
+        {
+            <ul class="text-sm text-text">
+                <li>Reviews: <b>@reviews.Count</b></li>
+                @if (reviews.Count > 0)
+                {
+                    <li>Newest: <b>@reviews[0].Author.PublicName()</b> (@reviews[0].Country) on @reviews[0].WatchPurchased</li>
+                    <li class="text-text-muted">"@reviews[0].Comment"</li>
+                }
+            </ul>
+        }
+    </section>
 </Container>
 
 @code {
-    private bool loading = true;
-    private string? error;
-    private List<BrandRow> brands = new();
+    private List<BrandRow>? brands; private string? brandsError;
+    private WatchPage? page1, page2; private string? pagingError;
+    private Watch? watch; private bool watchLoaded; private string? watchError;
+    private DealerStats? stats; private bool statsLoaded; private string? statsError;
+    private IReadOnlyList<Review>? reviews; private string? reviewsError;
+
+    private static string Describe(Exception ex) => $"{ex.GetType().Name}: {ex.Message}";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // One request, sorted and limited in the database.
             var res = await Db.From<BrandRow>()
                 .Order(b => b.DisplayOrder, Constants.Ordering.Ascending)
                 .Range(0, 49)
                 .Get();
             brands = res.Models;
         }
-        catch (Exception ex)
+        catch (Exception ex) { brandsError = Describe(ex); }
+
+        try
         {
-            error = $"{ex.GetType().Name}: {ex.Message}";
+            page1 = await Watches.GetActiveAsync(1, 12);
+            page2 = await Watches.GetActiveAsync(2, 12);
         }
-        finally
+        catch (Exception ex) { pagingError = Describe(ex); }
+
+        try { watch = await Watches.GetBySlugAsync("rolex-submariner-14060"); }
+        catch (Exception ex) { watchError = Describe(ex); }
+        finally { watchLoaded = true; }
+
+        if (watch is null)
         {
-            loading = false;
+            statsError = reviewsError = "Skipped: section 2 returned no watch.";
+            return;
         }
+
+        try { stats = await Dealers.GetStatsAsync(watch.Dealer.Id); }
+        catch (Exception ex) { statsError = Describe(ex); }
+        finally { statsLoaded = true; }
+
+        try { reviews = await Reviews.GetForDealerAsync(watch.Dealer.Id, 1, 10); }
+        catch (Exception ex) { reviewsError = Describe(ex); }
     }
 }

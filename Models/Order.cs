@@ -5,7 +5,7 @@ namespace LuxWatch.Models;
 /// </summary>
 public class Order
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string OrderNumber { get; private set; }
     public decimal PricePhp { get; private set; }

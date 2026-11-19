@@ -7,7 +7,7 @@ public class Watch
 {
     public const int PopularThreshold = 1000;
 
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Slug { get; private set; }
     public string Model { get; private set; }

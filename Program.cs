@@ -23,4 +23,9 @@ var supabase = new Supabase.Client(url, key,
 await supabase.InitializeAsync();
 builder.Services.AddSingleton(supabase);
 
+// Read repositories: stateless, wrap the singleton client → singletons.
+builder.Services.AddSingleton<LuxWatch.Data.Repositories.IWatchRepository, LuxWatch.Data.Repositories.SupabaseWatchRepository>();
+builder.Services.AddSingleton<LuxWatch.Data.Repositories.IDealerRepository, LuxWatch.Data.Repositories.SupabaseDealerRepository>();
+builder.Services.AddSingleton<LuxWatch.Data.Repositories.IReviewReadRepository, LuxWatch.Data.Repositories.SupabaseReviewReadRepository>();
+
 await builder.Build().RunAsync();
