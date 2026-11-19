@@ -16,4 +16,9 @@ public class DealerStatsRow : BaseModel
     [Column("avg_item_as_described")]  public decimal? AvgItemAsDescribed { get; set; }
     [Column("avg_communication")]      public decimal? AvgCommunication { get; set; }
     [Column("recommend_pct")]          public int? RecommendPct { get; set; }
+    [Column("stars_5")]                public int Stars5 { get; set; }
+    [Column("stars_4")]                public int Stars4 { get; set; }
+    [Column("stars_3")]                public int Stars3 { get; set; }
+    [Column("stars_2")]                public int Stars2 { get; set; }
+    [Column("stars_1")]                public int Stars1 { get; set; }
 }

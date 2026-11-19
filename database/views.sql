@@ -75,7 +75,13 @@ select
     rs.avg_shipping,
     rs.avg_item_as_described,
     rs.avg_communication,
-    rs.recommend_pct
+    rs.recommend_pct,
+    -- Star distribution (overall rating) for the review summary bars.
+    coalesce(rs.stars_5, 0)                as stars_5,
+    coalesce(rs.stars_4, 0)                as stars_4,
+    coalesce(rs.stars_3, 0)                as stars_3,
+    coalesce(rs.stars_2, 0)                as stars_2,
+    coalesce(rs.stars_1, 0)                as stars_1
 from public.dealers d
 left join (
     select
@@ -93,7 +99,12 @@ left join (
         round(avg(r.shipping), 1)                                  as avg_shipping,
         round(avg(r.item_as_described), 1)                         as avg_item_as_described,
         round(avg(r.communication), 1)                             as avg_communication,
-        round(100.0 * avg(case when r.recommends then 1 else 0 end))::int as recommend_pct
+        round(100.0 * avg(case when r.recommends then 1 else 0 end))::int as recommend_pct,
+        (count(*) filter (where r.overall = 5))::int               as stars_5,
+        (count(*) filter (where r.overall = 4))::int               as stars_4,
+        (count(*) filter (where r.overall = 3))::int               as stars_3,
+        (count(*) filter (where r.overall = 2))::int               as stars_2,
+        (count(*) filter (where r.overall = 1))::int               as stars_1
     from public.reviews r
     join public.orders  o on o.id = r.order_id
     join public.watches w on w.id = o.watch_id

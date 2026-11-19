@@ -66,9 +66,7 @@ public static class SampleData
         since: new DateOnly(2015, 1, 1),
         shipsWithin: "Usually ships in-stock items within 24 hours",
         respondsWithin: "Replies within 10 hours",
-        isVerified: true,
-        seedWatchesSoldBaseline: 200,
-        seedActiveListingsBaseline: 82
+        isVerified: true
     );
 
     // ── Primary featured listing ──

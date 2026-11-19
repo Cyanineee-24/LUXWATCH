@@ -31,8 +31,6 @@ public static class RowMapping
 
     public static User ToDomain(this UserRow row) =>
         new(row.Username, row.FullName,
-            email: "",                      // not readable with the publishable key (column grant)
-            passwordHash: "",               // no password column: auth moves to Supabase Auth
             country: row.Country ?? "",
             createdAt: AsUtc(row.CreatedAt))
         { Id = row.Id };
@@ -54,8 +52,8 @@ public static class RowMapping
             owner, row.Name, row.Country, DateOnly.FromDateTime(row.Since),
             row.ShipsWithin ?? "", row.RespondsWithin ?? "", row.IsVerified)
         { Id = row.Id };
-        // Note: WatchesSold / ActiveListings / ratings are NOT set here.
-        // They come from dealer_stats via IDealerRepository.GetStatsAsync.
+        // Stats (WatchesSold / ActiveListings / ratings) are NOT set here: the page
+        // sets dealer.Stats from IDealerRepository.GetStatsAsync (dealer_stats view).
         return ctx.Dealers[row.Id] = dealer;
     }
 
@@ -113,8 +111,6 @@ public static class RowMapping
             ? u
             : ctx.Users[row.BuyerId] = new User(
                 row.AuthorUsername, row.AuthorName,
-                email: "",                    // not exposed by the view (not needed by the card)
-                passwordHash: "",
                 country: row.AuthorCountry ?? "")
             { Id = row.BuyerId };
 
