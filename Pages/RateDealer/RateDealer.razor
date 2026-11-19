@@ -14,7 +14,7 @@
 }
 else
 {
-    <PageTitle>Rate your dealer — @watch.Brand @watch.Model — LuxWatch</PageTitle>
+    <PageTitle>Rate your dealer — @watch.Brand.Name @watch.Model — LuxWatch</PageTitle>
 
     <Container Class="py-8 md:py-12">
         <!-- Breadcrumb -->
@@ -40,11 +40,11 @@ else
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <img src="@(watch.Images.FirstOrDefault() ?? "/images/landing_page_hero_macro.jpg")"
-                         alt="@watch.Brand @watch.Model"
+                    <img src="@(watch.Images.FirstOrDefault()?.Url ?? "/images/landing_page_hero_macro.jpg")"
+                         alt="@watch.Brand.Name @watch.Model"
                          class="size-20 shrink-0 rounded-md border border-border object-cover bg-field" />
                     <div>
-                        <h2 class="font-display text-base font-bold text-text">@watch.Brand @watch.Model</h2>
+                        <h2 class="font-display text-base font-bold text-text">@watch.Brand.Name @watch.Model</h2>
                         <p class="text-xs text-text-muted">Ref. @watch.Reference · @watch.Condition</p>
                         <p class="mt-1 font-semibold text-gold">PHP @watch.PricePhp.ToString("N0", CultureInfo.InvariantCulture)</p>
                     </div>
@@ -276,7 +276,7 @@ else
 
     private void HandleSubmit()
     {
-        if (isSubmitting) return;
+        if (isSubmitting || watch is null) return;
 
         if (overall == 0)
         {
@@ -300,21 +300,16 @@ else
 
         try
         {
-            // TODO: use the logged-in user
-            var newReview = new Review
-            {
-                Author = "Marcus V.",
-                Country = "PH",
-                Date = DateOnly.FromDateTime(DateTime.Today),
-                Overall = overall,
-                Shipping = shipping,
-                ItemAsDescribed = itemAsDescribed,
-                Communication = communication,
-                Recommends = recommends,
-                Comment = comment.Trim(),
-                WatchPurchased = "Rolex Submariner (No Date) 14060",
-                Helpful = 0
-            };
+            var order = SampleData.CreateDemoCompletedOrder(watch);
+            var newReview = new Review(
+                order: order,
+                overall: overall,
+                shipping: shipping,
+                itemAsDescribed: itemAsDescribed,
+                communication: communication,
+                recommends: recommends,
+                comment: comment.Trim()
+            );
 
             ReviewService.Add(newReview);
             Nav.NavigateTo($"/watch/{Slug}?reviewed=true#reviews");
