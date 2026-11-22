@@ -28,4 +28,12 @@ builder.Services.AddSingleton<LuxWatch.Data.Repositories.IWatchRepository, LuxWa
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IDealerRepository, LuxWatch.Data.Repositories.SupabaseDealerRepository>();
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IReviewReadRepository, LuxWatch.Data.Repositories.SupabaseReviewReadRepository>();
 
+// TEMP until Supabase Auth: the demo user from wwwroot/appsettings.json (Demo:CurrentUsername).
+var demoUsername = builder.Configuration["Demo:CurrentUsername"];
+if (string.IsNullOrWhiteSpace(demoUsername))
+    throw new InvalidOperationException(
+        "Demo:CurrentUsername missing. Put it in wwwroot/appsettings.json.");
+builder.Services.AddSingleton<LuxWatch.Services.ICurrentUserService>(
+    sp => new LuxWatch.Services.CurrentUserService(sp.GetRequiredService<Supabase.Client>(), demoUsername));
+
 await builder.Build().RunAsync();
