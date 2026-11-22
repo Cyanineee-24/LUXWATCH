@@ -10,6 +10,7 @@ GET {{url}}/rest/v1/watches?select=id,slug,model,price_php,brand:brands(name,slu
 apikey: {{key}}
 
 ### Visible reviews
+# Empty ([]) right after a reset: reviews only exist after a completed purchase in the app.
 GET {{url}}/rest/v1/reviews?select=*&deleted_at=is.null&order=created_at.desc
 apikey: {{key}}
 
@@ -23,14 +24,15 @@ apikey: {{key}}
 GET {{url}}/rest/v1/watches?select=slug,model,views_in_48h&status=eq.Active&views_in_48h=gt.1000&order=views_in_48h.desc
 apikey: {{key}}
 
-### Marcus's orders that have no review yet (Phase 5 RateDealer)
+### Marcus's orders that have no review yet (Rate Dealer)
 # users!inner + users.username filters by buyer; reviews=is.null keeps only
-# orders without a review. Expect LW-2026-0401 and LW-2026-0402.
+# orders without a review. Empty ([]) after a reset; after Buy → Confirm
+# delivery in the app, that order shows up here.
 GET {{url}}/rest/v1/orders?select=order_number,watches(slug,model),users!inner(username),reviews(id)&users.username=eq.marcusvance&reviews=is.null
 apikey: {{key}}
 
 ### Soft delete a review (allowed: only helpful_count / deleted_at are updatable)
-# Paste a real review id from the "Visible reviews" request.
+# Needs a review created in the app first; paste its id from "Visible reviews".
 PATCH {{url}}/rest/v1/reviews?id=eq.PASTE-REVIEW-UUID
 apikey: {{key}}
 Content-Type: application/json
@@ -69,7 +71,7 @@ apikey: {{key}}
 #   GET {{url}}/rest/v1/users?select=id,username&username=eq.marcusvance
 
 ### Place an order through the function: should be 200 with the new order
-# (order_number LW-<year>-1001…, status PendingPayment, price copied from the watch)
+# (order_number LW-<year>-0001 right after a reset, status PendingPayment, price copied from the watch)
 POST {{url}}/rest/v1/rpc/place_order
 apikey: {{key}}
 Content-Type: application/json

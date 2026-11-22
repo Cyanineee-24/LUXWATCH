@@ -292,14 +292,21 @@ else
                             <p class="text-xs text-text-muted mt-0.5">Professional dealer · @watch.Dealer.Country</p>
                         </div>
 
-                        <!-- Gold star, average and total reviews link -->
-                        <div class="flex items-center gap-1.5 shrink-0 text-sm">
-                            <svg class="size-4 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
-                            </svg>
-                            <span class="font-bold text-text">@FormatRating(stats?.AvgOverall)</span>
-                            <a href="#reviews" class="text-xs text-text-secondary hover:text-gold underline">(@ReviewCount)</a>
-                        </div>
+                        <!-- Gold star, average and total reviews link (or an honest empty state) -->
+                        @if (HasReviews)
+                        {
+                            <div class="flex items-center gap-1.5 shrink-0 text-sm">
+                                <svg class="size-4 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
+                                </svg>
+                                <span class="font-bold text-text">@FormatRating(stats?.AvgOverall)</span>
+                                <a href="#reviews" class="text-xs text-text-secondary hover:text-gold underline">(@ReviewCount)</a>
+                            </div>
+                        }
+                        else
+                        {
+                            <a href="#reviews" class="shrink-0 text-xs text-text-muted hover:text-gold">No reviews yet</a>
+                        }
                     </div>
 
                     <!-- 3 Circular icon badges (34px) -->
@@ -465,6 +472,16 @@ else
                 </div>
             }
 
+            @if (!HasReviews)
+            {
+                <!-- Empty state: no "0.0", no "NaN%", no empty bars pretending to be data -->
+                <div class="mb-8 rounded-xl border border-border bg-surface px-6 py-10 text-center">
+                    <p class="text-sm font-semibold text-text">No reviews yet.</p>
+                    <p class="mt-1 text-xs text-text-muted">Reviews appear after a completed purchase.</p>
+                </div>
+            }
+            else
+            {
             <!-- Left summary + Right distribution bars -->
             <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                 <!-- Left summary -->
@@ -516,6 +533,7 @@ else
                     }
                 </div>
             </div>
+            }
 
             <!-- Rate card: Demo trigger -->
             <!-- Demo trigger: in real product, this appears after delivery from Track a Trade -->
@@ -529,6 +547,8 @@ else
                 </Button>
             </div>
 
+            @if (reviews.Count > 0)
+            {
             <!-- Filter and sort row -->
             <div class="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <select class="rounded-md border border-border-strong bg-field px-4 py-2.5 text-xs text-text focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/25"
@@ -549,6 +569,7 @@ else
                     <option value="helpful">Sort by: Most helpful</option>
                 </select>
             </div>
+            }
 
             <!-- Reviews list -->
             @{
@@ -556,7 +577,11 @@ else
                 var displayed = filtered.Take(visibleCount).ToList();
             }
 
-            @if (filtered.Count == 0)
+            @if (reviews.Count == 0)
+            {
+                @* The empty state above already says "No reviews yet." *@
+            }
+            else if (filtered.Count == 0)
             {
                 <div class="py-12 text-center text-xs text-text-muted">
                     No reviews match this filter.
@@ -814,6 +839,7 @@ else
     private string? undoError;
 
     private int ReviewCount => stats?.ReviewCount ?? reviews.Count;
+    private bool HasReviews => ReviewCount > 0;
     private bool HasMoreReviews => reviews.Count < ReviewCount;
 
     private string CurrentMainImage =>

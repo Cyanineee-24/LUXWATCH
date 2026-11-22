@@ -1,27 +1,23 @@
 -- =============================================================================
--- LuxWatch: demo seed data (mirrors Data/SampleData.cs, plus a fuller catalog)
+-- LuxWatch: demo seed data, CATALOG ONLY
 -- Run AFTER schema.sql. Ids are uuid defaults: never hardcoded; every FK is
--- looked up by its natural key (slug, username, dealer name, order_number).
+-- looked up by its natural key (slug, username, dealer name).
+--
+-- Catalog vs transactional data: this file seeds what a marketplace has before
+-- anyone buys anything (brands, dealers, users, listings). Orders and reviews
+-- are TRANSACTIONAL: they start empty and are created only by the app
+-- (Buy → Confirm delivery → Rate dealer), so every one of them is real demo data.
 -- =============================================================================
 begin;
 
 -- ── users ────────────────────────────────────────────────────────────────────
--- marcusvance = SampleData.CurrentUser (the demo buyer); 4 dealer owners;
--- 8 buyers behind the seeded reviews.
+-- marcusvance = the demo buyer (Demo:CurrentUsername); the 4 dealer owners.
 insert into public.users (username, full_name, email, country, created_at) values
     ('marcusvance',  'Marcus Vance',         'marcus.vance@horology.com',      'PH', '2026-01-01T00:00:00Z'),
     ('hauszeitwerk', 'Haus Zeitwerk',        'service@zeitwerk.example.de',    'DE', '2015-01-01T00:00:00Z'),
     ('manilachrono', 'Manila Chrono',        'hello@manilachrono.example.ph',  'PH', '2018-03-01T00:00:00Z'),
     ('lioncitytime', 'Lion City Timepieces', 'sales@lioncitytime.example.sg',  'SG', '2012-06-01T00:00:00Z'),
-    ('ginzatokei',   'Ginza Tokei',          'info@ginzatokei.example.jp',     'JP', '2009-04-01T00:00:00Z'),
-    ('andreash',     'Andreas H.',           'andreas.h@example.de',           'DE', '2026-01-01T00:00:00Z'),
-    ('malissaw',     'Malissa W.',           'malissa.w@example.com',          'US', '2026-01-01T00:00:00Z'),
-    ('jamesc',       'James C.',             'james.c@example.sg',             'SG', '2026-01-01T00:00:00Z'),
-    ('camiller',     'Camille R.',           'camille.r@example.fr',           'FR', '2026-01-01T00:00:00Z'),
-    ('kenjit',       'Kenji T.',             'kenji.t@example.jp',             'JP', '2026-01-01T00:00:00Z'),
-    ('hossame',      'Hossam E.',            'hossam.e@example.ae',            'AE', '2026-01-01T00:00:00Z'),
-    ('benc',         'Ben C.',               'ben.c@example.com',              'US', '2026-01-01T00:00:00Z'),
-    ('leam',         'Lea M.',               'lea.m@example.de',               'DE', '2026-01-01T00:00:00Z');
+    ('ginzatokei',   'Ginza Tokei',          'info@ginzatokei.example.jp',     'JP', '2009-04-01T00:00:00Z');
 
 -- ── brands (20, landing-page order) ──────────────────────────────────────────
 -- slug = Brand.GenerateSlug(name): lower-case, spaces → '-'.
@@ -48,8 +44,8 @@ insert into public.brands (name, slug, is_featured, display_order, description) 
     ('Chopard',             'chopard',             false, 19, 'Artisan watchmaking, Happy Diamonds, and Mille Miglia elegance.');
 
 -- ── dealers (4, each owned by a user) ────────────────────────────────────────
--- SampleData's SeedWatchesSoldBaseline / SeedActiveListingsBaseline are
--- front-end-only fakes and are intentionally NOT stored.
+-- Dealer counts (active listings, sold, reviews) are derived by the
+-- dealer_stats view from real rows, never stored here.
 insert into public.dealers (user_id, name, country, since, ships_within, responds_within, is_verified, created_at)
 select u.id, v.name, v.country, v.since, v.ships, v.responds, v.verified, v.created_at
 from (values
@@ -239,7 +235,7 @@ join public.brands  b on b.id = w.brand_id
 cross join (values (0), (1)) as i(ord)
 where l.slug <> 'rolex-submariner-14060';
 
--- Featured Submariner: exactly as in SampleData.
+-- Featured Submariner: the full 10-line spec list and 5 gallery images.
 insert into public.watch_specs (watch_id, key, value, display_order)
 select w.id, v.key, v.value, v.ord
 from public.watches w
@@ -269,85 +265,5 @@ cross join (values
 ) as v(ord, url, alt)
 where w.slug = 'rolex-submariner-14060';
 
-
--- ── Sold watches (Haus Zeitwerk) ─────────────────────────────────────────────
--- 8 behind the seeded reviews (from SampleData) + 2 bought by marcusvance with
--- no review yet (for the Phase 5 RateDealer flow). Empty C# Reference → NULL.
-insert into public.watches (
-    slug, brand_id, dealer_id, model, reference, subtitle, description, condition,
-    year, has_box, has_papers, price_php, shipping_cost_php, location_country_code,
-    views_in_48h, listed_date, delivery_window, status)
-select v.slug, b.id, d.id, v.model, v.reference, v.subtitle, v.description, 'PreOwned',
-       v.year, v.has_box, v.has_papers, v.price_php, v.shipping_cost_php, 'DE',
-       v.views, v.listed_date, 'Delivered', 'Sold'
-from (values
-    ('omega-speedmaster-reduced-351050',  'omega',       'Speedmaster Reduced', '3510.50', 'Automatic chronograph',  'Classic Speedmaster Reduced', 2002, true,  true,  185000.00, 3500.00, 320, date '2026-08-01'),
-    ('rolex-datejust-16234',              'rolex',       'Datejust',            '16234',   'Automatic men''s watch', 'Rolex Datejust 16234',        1995, true,  false, 320000.00, 4500.00, 410, date '2026-08-10'),
-    ('tudor-black-bay-58-1',              'tudor',       'Black Bay',           '58',      'Automatic diver watch',  'Tudor Black Bay Fifty-Eight', 2021, true,  true,  210000.00, 3500.00, 550, date '2026-08-15'),
-    ('tudor-black-bay-58-2',              'tudor',       'Black Bay',           '58',      'Automatic diver watch',  'Tudor Black Bay 58',          2020, true,  true,  205000.00, 3500.00, 290, date '2026-08-20'),
-    ('grand-seiko-sbga211',               'grand-seiko', 'SBGA211',             null,      'Spring Drive Snowflake', 'Grand Seiko Snowflake',       2022, true,  true,  310000.00, 4000.00, 480, date '2026-08-12'),
-    ('omega-seamaster-225450',            'omega',       'Seamaster',           '2254.50', 'Professional 300M',      'Omega Seamaster 2254.50',     2006, true,  false, 195000.00, 3500.00, 620, date '2026-08-05'),
-    ('rolex-explorer-14270',              'rolex',       'Explorer',            '14270',   'Sports watch',           'Rolex Explorer 14270',        1999, true,  true,  345000.00, 4500.00, 710, date '2026-07-28'),
-    ('rolex-datejust-16014',              'rolex',       'Datejust',            '16014',   'Silver dial',            'Rolex Datejust 16014',        1984, false, false, 280000.00, 3500.00, 430, date '2026-07-20'),
-    ('cartier-santos-wssa0018',            'cartier', 'Santos de Cartier', 'WSSA0018', 'Automatic, large model', 'Santos de Cartier, steel, 2021 full set', 2021, true, true, 410000.00, 4500.00, 380, date '2026-09-01'),
-    ('omega-speedmaster-professional-310', 'omega', 'Speedmaster Professional Moonwatch', '310.30.42.50.01.001', 'Manual-wind chronograph', 'Speedmaster Moonwatch, Cal. 3861, 2022 full set', 2022, true, true, 395000.00, 3500.00, 540, date '2026-09-05')
-) as v(slug, brand_slug, model, reference, subtitle, description, year, has_box, has_papers,
-       price_php, shipping_cost_php, views, listed_date)
-join public.brands b on b.slug = v.brand_slug
-cross join (select id from public.dealers where name = 'Haus Zeitwerk GmbH') d;
-
-insert into public.watch_images (watch_id, url, alt_text, sort_order)
-select w.id, v.url, v.alt, 0
-from (values
-    ('omega-speedmaster-reduced-351050',   '/images/landing_page_hero_macro.jpg', 'Omega Speedmaster'),
-    ('rolex-datejust-16234',               '/images/login_hero_art.jpg',          'Rolex Datejust'),
-    ('tudor-black-bay-58-1',               '/images/register_hero_art.jpg',       'Tudor Black Bay 58'),
-    ('tudor-black-bay-58-2',               '/images/landing_page_hero_macro.jpg', 'Tudor Black Bay 58'),
-    ('grand-seiko-sbga211',                '/images/login_hero_art.jpg',          'Grand Seiko SBGA211'),
-    ('omega-seamaster-225450',             '/images/register_hero_art.jpg',       'Omega Seamaster'),
-    ('rolex-explorer-14270',               '/images/landing_page_hero_macro.jpg', 'Rolex Explorer'),
-    ('rolex-datejust-16014',               '/images/login_hero_art.jpg',          'Rolex Datejust'),
-    ('cartier-santos-wssa0018',            '/images/register_hero_art.jpg',       'Santos de Cartier'),
-    ('omega-speedmaster-professional-310', '/images/landing_page_hero_macro.jpg', 'Omega Speedmaster Moonwatch')
-) as v(slug, url, alt)
-join public.watches w on w.slug = v.slug;
-
--- ── orders ───────────────────────────────────────────────────────────────────
--- All Completed, all on Sold watches (Active listings have no order, so they
--- can still be bought). Price/shipping are snapshots copied from the watch.
-insert into public.orders (order_number, buyer_id, watch_id, price_php, shipping_cost_php, placed_at, status)
-select v.order_number, u.id, w.id, w.price_php, w.shipping_cost_php, v.placed_at, 'Completed'
-from (values
-    ('LW-2026-0301', 'andreash',    'omega-speedmaster-reduced-351050',   timestamptz '2026-09-20T00:00:00Z'),
-    ('LW-2026-0302', 'malissaw',    'rolex-datejust-16234',               timestamptz '2026-09-18T00:00:00Z'),
-    ('LW-2026-0303', 'jamesc',      'tudor-black-bay-58-1',               timestamptz '2026-09-14T00:00:00Z'),
-    ('LW-2026-0304', 'camiller',    'tudor-black-bay-58-2',               timestamptz '2026-09-06T00:00:00Z'),
-    ('LW-2026-0305', 'kenjit',      'grand-seiko-sbga211',                timestamptz '2026-08-28T00:00:00Z'),
-    ('LW-2026-0306', 'hossame',     'omega-seamaster-225450',             timestamptz '2026-08-22T00:00:00Z'),
-    ('LW-2026-0307', 'benc',        'rolex-explorer-14270',               timestamptz '2026-08-15T00:00:00Z'),
-    ('LW-2026-0308', 'leam',        'rolex-datejust-16014',               timestamptz '2026-08-10T00:00:00Z'),
-    -- Unreviewed, demo user: available to the RateDealer flow (Phase 5)
-    ('LW-2026-0401', 'marcusvance', 'cartier-santos-wssa0018',            timestamptz '2026-09-15T00:00:00Z'),
-    ('LW-2026-0402', 'marcusvance', 'omega-speedmaster-professional-310', timestamptz '2026-09-25T00:00:00Z')
-) as v(order_number, username, watch_slug, placed_at)
-join public.users   u on u.username = v.username
-join public.watches w on w.slug     = v.watch_slug;
-
--- ── reviews (8, one per completed order) ─────────────────────────────────────
--- helpful_count = SampleData's SeedHelpfulBaseline.
-insert into public.reviews (order_id, overall, shipping, item_as_described, communication,
-                            recommends, comment, helpful_count, created_at)
-select o.id, v.overall, v.shipping, v.item, v.comm, v.recommends, v.comment, v.helpful, v.created_at
-from (values
-    ('LW-2026-0301', 5, 5, 5, 5, true,  'Everything went smoothly. Packed carefully and exactly as pictured.', 3, timestamptz '2026-09-24T00:00:00Z'),
-    ('LW-2026-0302', 5, 5, 5, 5, true,  'Exceeded expectations. Great communication and it arrived within days.', 0, timestamptz '2026-09-22T00:00:00Z'),
-    ('LW-2026-0303', 5, 5, 5, 4, true,  'Authentication paperwork was thorough. The dealer answered every question before I paid.', 0, timestamptz '2026-09-18T00:00:00Z'),
-    ('LW-2026-0304', 4, 3, 5, 5, true,  'The watch was perfect, but shipping took four days longer than quoted.', 0, timestamptz '2026-09-11T00:00:00Z'),
-    ('LW-2026-0305', 5, 5, 5, 5, true,  'Easy and straightforward. Everything matched the listing.', 0, timestamptz '2026-09-03T00:00:00Z'),
-    ('LW-2026-0306', 5, 5, 5, 5, true,  'Fast replies and insured shipping. Would buy from this dealer again.', 0, timestamptz '2026-08-27T00:00:00Z'),
-    ('LW-2026-0307', 5, 5, 5, 5, true,  'Honest description of the condition. Very happy.', 0, timestamptz '2026-08-20T00:00:00Z'),
-    ('LW-2026-0308', 3, 4, 3, 4, false, 'The case had more wear than the photos suggested. The dealer was polite and offered a partial refund.', 0, timestamptz '2026-08-14T00:00:00Z')
-) as v(order_number, overall, shipping, item, comm, recommends, comment, helpful, created_at)
-join public.orders o on o.order_number = v.order_number;
 
 commit;

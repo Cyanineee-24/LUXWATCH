@@ -252,9 +252,9 @@ create policy "reviews_update_all" on public.reviews
 -- See that file's header for the reasoning.
 -- =============================================================================
 
--- Order numbers: LW-<year>-1001, 1002, … (clear of the seeded LW-2026-03xx/04xx).
+-- Order numbers: LW-<year>-0001, 0002, … (orders start empty: the seed is catalog only).
 -- No grant to anon: only the functions (running as owner) call nextval().
-create sequence if not exists public.order_number_seq start 1001;
+create sequence if not exists public.order_number_seq start 1;
 
 
 -- -----------------------------------------------------------------------------

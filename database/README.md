@@ -44,18 +44,27 @@ Both views use `security_invoker = true`, so the caller's grants and RLS on the 
 
 **Deferred to Tier 2 (after auth):** Payment, Shipment, AuthenticationReport, Favorite, CollectionItem, WatchType.
 
-## Demo data (`seed.sql`)
+## Demo data (`seed.sql`): catalog only
 
 | Table | Rows | What's in it |
 |---|---|---|
-| users | 13 | Marcus Vance (the demo buyer, `SampleData.CurrentUser`), 4 dealer owners, 8 reviewers |
+| users | 5 | Marcus Vance (`marcusvance`, the demo buyer) and the 4 dealer owners |
 | brands | 20 | The landing-page brands |
 | dealers | 4 | Haus Zeitwerk (DE), Manila Chrono Exchange (PH), Lion City Timepieces (SG), Ginza Tokei Gallery (JP) |
-| watches | 34 | 24 Active across 13 brands (₱22,500 to ₱6.2M; 9 are Popular, with over 1,000 views in 48h) and 10 Sold |
-| watch_specs | 102 | 4 per Active listing, 10 for the featured Submariner |
-| watch_images | 61 | 2 per Active listing, 5 for the Submariner, 1 per Sold watch |
-| orders | 10 | All Completed, all on Sold watches. `LW-2026-0401` and `0402` are Marcus's and still unreviewed. |
-| reviews | 8 | One per order `LW-2026-0301` to `0308` |
+| watches | 24 | All Active, across 13 brands (₱22,500 to ₱6.2M; 9 are Popular, with over 1,000 views in 48h) |
+| watch_specs | 102 | 4 per listing, 10 for the featured Submariner |
+| watch_images | 51 | 2 per listing, 5 for the Submariner |
+| orders | **0** | Created only by the app (Buy) |
+| reviews | **0** | Created only by the app (Rate dealer, after a completed purchase) |
+
+### Catalog vs transactional data
+
+**Catalog data** is what a marketplace has before anyone buys anything: brands, dealers, users and listings. The seed provides it.
+
+**Transactional data** is what users create by doing things: orders and reviews. It starts **empty** on purpose, for three reasons:
+- **Every order and review in the demo is real.** It was made through the app's own Buy → Confirm delivery → Rate dealer flow, never inserted by hand.
+- **The rules can't be bypassed.** Fake orders and reviews would skip the rules the database enforces: `place_order` copies the price and reserves the watch, and a review needs a completed order.
+- **The counts start honest.** Dealers show "No reviews yet", sold counts start at 0, and every number on screen comes from something you did in the demo.
 
 ## Security (class policy)
 
@@ -87,10 +96,12 @@ The code is in `Data/Repositories/ReviewWriteRepository.cs`.
 
 Run these three files in the SQL Editor, in order: **`schema.sql` → `seed.sql` → `views.sql`**. `schema.sql` already includes every patch.
 
-You need a reset after testing Create a couple of times. Marcus (the demo user) has only **2 reviewable orders** (`LW-2026-0401`, `LW-2026-0402`), and a soft-deleted review still holds its order (`unique(order_id)`). So after two test reviews there's nothing left to review, unless you **buy a watch and confirm delivery** in the app, which creates a new reviewable order. Resetting also:
-- puts every watch back to its seeded status (Reserved and Sold test purchases become Active again);
-- removes test orders and restarts the order numbers at `LW-<year>-1001`;
-- clears Helpful counts and soft deletes back to the seed values.
+Reset before a clean demo run. It brings the database back to catalog only:
+- **Watches:** all 24 are Active again, including any Reserved or Sold during testing.
+- **Orders and reviews:** deleted. Soft-deleted reviews are removed too.
+- **Order numbers:** restart at `LW-<year>-0001`.
+
+To review a dealer, there has to be a completed purchase first: **Buy → My orders → Confirm delivery (demo) → Rate dealer**. One review per order; a soft-deleted review still holds its order (`unique(order_id)`).
 
 ## Ordering (functions, not write grants)
 

@@ -110,18 +110,20 @@ Open the page, then **DevTools → Network**, filter by `supabase.co`, and reloa
 
 ### Demo script
 
-1. **Bestsellers** (`/collections/bestsellers`): listings from Supabase. DevTools → Network shows 1 request per page.
-2. **Watch detail** (an Active watch, e.g. `/watch/rolex-gmt-master-ii-126710blro`): images, specs, dealer stats and reviews in 4 requests.
-3. **Buy now → Place order**: "Order LW-2026-1001 placed." The button area now says **Reserved**.
-4. **Back to bestsellers**: the watch is gone from the grid (only Active watches are listed).
-5. **My orders → Confirm delivery (demo)**: the order becomes Completed and the watch Sold.
-6. **Rate dealer** (from that order card): submit a review. It appears on the watch page.
-7. **Helpful** on a review: the count goes up by 1, in place.
-8. **Delete / Undo** on your review: it disappears and comes back. Delete it again.
-9. **Supabase Table Editor:**
-   - `orders`: the new order is `Completed`, with the price copied from the watch.
-   - `watches.status`: that watch is `Sold`.
-   - `reviews`: your deleted review is still there, with `deleted_at` filled in.
+**Start from a reset** (`schema.sql` → `seed.sql` → `views.sql`): 24 Active watches, **0 orders, 0 reviews**. The expected values below assume that. The example watch is the Rolex GMT-Master II "Pepsi" (dealer: Lion City Timepieces).
+
+| # | Do this | Expect |
+|---|---|---|
+| 0 | **My orders** (navbar) | "No orders yet." |
+| 1 | **Bestsellers** (`/collections/bestsellers`) | 12 cards + Next; page 2 has 12. DevTools → Network: 1 request per page. |
+| 2 | **Watch detail** `/watch/rolex-gmt-master-ii-126710blro` | ₱1,150,000. Dealer box: 0 watches sold, 6 active listings, **"No reviews yet"**. Reviews section: "No reviews yet. Reviews appear after a completed purchase." 4 requests (5 on the session's first detail page). |
+| 3 | **Buy now → Place order** | "Order **LW-2026-0001** placed." The button area says **Reserved**, and active listings drop to 5. 1 POST (`rpc/place_order`). |
+| 4 | **Bestsellers** again | The GMT is gone; page 2 now has 11 cards. |
+| 5 | **My orders → Confirm delivery (demo)** | LW-2026-0001 is **Completed** (₱1,152,500 incl. shipping), with a **Rate dealer** button. |
+| 6 | **Rate dealer** → e.g. 5★ everywhere, Recommend: Yes, a comment | You land on the GMT page (**Sold**): "Thanks, your review is posted." Reviews (1), rating **5.0**, **100%** recommend, star bars 1/0/0/0/0, 1 watch sold. |
+| 7 | **Helpful** on your review | Shows **Helpful ✓ 1**, in place (1 PATCH). |
+| 8 | **Delete** → confirm, then **Undo**, then **Delete** again | Back to "No reviews yet" → the review returns → gone again. |
+| 9 | **Supabase Table Editor** | `orders`: 1 row, `Completed`, `price_php` 1150000.00 copied from the watch. `watches`: the GMT is `Sold`. `reviews`: 1 row, `helpful_count` 1, **`deleted_at` filled in** (soft delete). |
 
 ### Screenshots
 
