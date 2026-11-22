@@ -87,7 +87,10 @@ The code is in `Data/Repositories/ReviewWriteRepository.cs`.
 
 Run these three files in the SQL Editor, in order: **`schema.sql` → `seed.sql` → `views.sql`**. `schema.sql` already includes every patch.
 
-You need a reset after testing Create a couple of times. Marcus (the demo user) has only **2 reviewable orders** (`LW-2026-0401`, `LW-2026-0402`), and a soft-deleted review still holds its order (`unique(order_id)`). So after two test reviews there's nothing left to review until you reset. Resetting also clears Helpful counts and soft deletes back to the seed values.
+You need a reset after testing Create a couple of times. Marcus (the demo user) has only **2 reviewable orders** (`LW-2026-0401`, `LW-2026-0402`), and a soft-deleted review still holds its order (`unique(order_id)`). So after two test reviews there's nothing left to review, unless you **buy a watch and confirm delivery** in the app, which creates a new reviewable order. Resetting also:
+- puts every watch back to its seeded status (Reserved and Sold test purchases become Active again);
+- removes test orders and restarts the order numbers at `LW-<year>-1001`;
+- clears Helpful counts and soft deletes back to the seed values.
 
 ## Ordering (functions, not write grants)
 

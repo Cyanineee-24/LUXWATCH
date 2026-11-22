@@ -15,7 +15,28 @@ Database setup (schema, seed data, views, patches) is in [`database/README.md`](
 
 Reviews are never physically deleted. **Delete** sets `deleted_at`, every read filters `deleted_at is null`, and **Undo** clears it again. The database has no DELETE grant, so rows can't really be removed from the app. For the reasons and details, see [`database/README.md`](database/README.md#storage-pattern-soft-delete-reviews).
 
-**Reset demo data:** re-run `schema.sql` → `seed.sql` → `views.sql` in the Supabase SQL Editor. The demo user has only 2 reviewable orders, so a reset is needed to test Create more than twice. See [`database/README.md`](database/README.md#reset-demo-data).
+**Reset demo data:** re-run `schema.sql` → `seed.sql` → `views.sql` in the Supabase SQL Editor. This restores the watches to their seeded statuses, removes test orders, and clears Helpful counts and soft deletes. See [`database/README.md`](database/README.md#reset-demo-data).
+
+## Ordering
+
+```
+Buy now → order placed (watch Reserved, gone from the grid) → My orders
+        → Confirm delivery (demo) → watch Sold, order Completed → Rate dealer
+        → Helpful → Delete / Undo
+```
+
+**Why database functions instead of write grants:** the publishable key is public. If the browser could `INSERT` into `orders` or `UPDATE` `watches`, anyone could create an order at any price or mark any watch Sold. So the public key has **no write grant on `orders` or `watches`**. Three Postgres functions (`security definer`) each do one whole operation in a single transaction: they validate the input, lock the rows, and **copy the price from the database**. The app calls them through `POST /rest/v1/rpc/<name>`, and that is the only way in. A direct `POST /orders` is refused.
+
+| Action (UI) | Function | Order | Watch |
+|---|---|---|---|
+| **Buy now → Place order** (watch detail) | `place_order` | new, `PendingPayment` | `Active` → `Reserved` |
+| **Cancel order** (My orders) | `cancel_order` | `PendingPayment`/`InEscrow` → `Cancelled` | `Reserved` → `Active` (back on sale) |
+| **Confirm delivery (demo)** (My orders) | `confirm_delivery` | `PendingPayment`…`Delivered` → `Completed` | → `Sold` |
+
+- **Demo shortcut:** `confirm_delivery` stands in for pay → ship → deliver until the payment and shipment tables exist.
+- **Two buyers at once:** the function locks the watch row. The second buyer gets "Sorry, someone just reserved this watch." The "one non-cancelled order per watch" unique index backs this up.
+- **TODO (auth):** the app passes the demo user's id (`p_buyer_id`). Under the class policy any caller could act as any buyer. With Supabase Auth this becomes `auth.uid()`.
+- Details and error keys: [`database/README.md`](database/README.md#ordering-functions-not-write-grants), and the SQL itself in [`database/patches/002_ordering.sql`](database/patches/002_ordering.sql).
 
 ## Architecture
 
@@ -59,6 +80,11 @@ The **first** detail page of a session makes one extra request: the demo user (`
 
 **Writes** are one request each: Submit review is 1 POST, Helpful is 1 PATCH, Delete and Undo are each 1 PATCH. After Delete or Undo, the reviews and stats reload in parallel (3 GETs).
 
+**Ordering:**
+- **Place order** is 1 POST (`rpc/place_order`), then the watch and dealer stats reload in parallel (2 GETs).
+- **`/account/orders`** is **1 GET per page**: orders with the watch, brand, images and review embedded, paged with `pageSize + 1`.
+- **Cancel** and **Confirm delivery** are each 1 POST (rpc), then 1 GET to reload the list.
+
 ### How to check it yourself
 Open the page, then **DevTools → Network**, filter by `supabase.co`, and reload:
 - `/collections/bestsellers` shows **1** request (`/rest/v1/watches?…status=eq.Active…`). Click **Next** and exactly 1 more appears.
@@ -66,19 +92,36 @@ Open the page, then **DevTools → Network**, filter by `supabase.co`, and reloa
 
 ## Known gaps
 
-- **Order price snapshot:** when reviews are loaded, the `Order` object takes its price from the watch's current price instead of the order's stored `price_php` / `shipping_cost_php`. The order price isn't shown anywhere in the UI.
+- **Unbuilt features** (Authentication, Collector Portal, Sell, Favorites, Help, Security, password reset) have real routes that show a styled "Coming soon" page, so no link ends on "Page not found".
+- **Search** isn't built: pressing Enter in the search bar opens the listings.
+- **No login yet:** the app acts as the demo user `marcusvance` (`Demo:CurrentUsername` in `appsettings.json`).
 
 ## Milestone checklist
 
 | Rubric item | Where it lives |
 |---|---|
-| **Table design** | [`database/schema.sql`](database/schema.sql): 8 Tier 1 tables, uuid keys, CHECKs, FK indexes, RLS. Read views are in [`database/views.sql`](database/views.sql). The table → UML map is in [`database/README.md`](database/README.md). |
-| **Read** | `/collections/bestsellers` (active listings, paged) and `/watch/{slug}` (watch, dealer stats, reviews) |
-| **Create** | **Submit review** on `/watch/{slug}/rate`: `POST /reviews` |
-| **Update** | **Helpful** on a review card: `PATCH helpful_count` |
+| **Table design** | [`database/schema.sql`](database/schema.sql): 8 Tier 1 tables, uuid keys, CHECKs, FK indexes, RLS, and the ordering functions. Read views are in [`database/views.sql`](database/views.sql). The table → UML map is in [`database/README.md`](database/README.md). |
+| **Read** | `/collections/bestsellers` (active listings, paged), `/watch/{slug}` (watch, dealer stats, reviews), `/account/orders` (my orders) |
+| **Create** | **Place order** on `/watch/{slug}` (`rpc/place_order`) and **Submit review** on `/watch/{slug}/rate` (`POST /reviews`) |
+| **Update** | **Cancel** / **Confirm delivery** on My orders (`rpc/cancel_order`, `rpc/confirm_delivery`) and **Helpful** on a review card (`PATCH helpful_count`) |
 | **Delete** | **Delete** / **Undo** on your own review: `PATCH deleted_at` (soft delete) |
 | **Fast habits** | [Fast habits](#fast-habits-data-access) above |
 | **Storage pattern** | [Storage pattern: soft delete](#storage-pattern-soft-delete) above, with details in [`database/README.md`](database/README.md#storage-pattern-soft-delete-reviews) |
+
+### Demo script
+
+1. **Bestsellers** (`/collections/bestsellers`): listings from Supabase. DevTools → Network shows 1 request per page.
+2. **Watch detail** (an Active watch, e.g. `/watch/rolex-gmt-master-ii-126710blro`): images, specs, dealer stats and reviews in 4 requests.
+3. **Buy now → Place order**: "Order LW-2026-1001 placed." The button area now says **Reserved**.
+4. **Back to bestsellers**: the watch is gone from the grid (only Active watches are listed).
+5. **My orders → Confirm delivery (demo)**: the order becomes Completed and the watch Sold.
+6. **Rate dealer** (from that order card): submit a review. It appears on the watch page.
+7. **Helpful** on a review: the count goes up by 1, in place.
+8. **Delete / Undo** on your review: it disappears and comes back. Delete it again.
+9. **Supabase Table Editor:**
+   - `orders`: the new order is `Completed`, with the price copied from the watch.
+   - `watches.status`: that watch is `Sold`.
+   - `reviews`: your deleted review is still there, with `deleted_at` filled in.
 
 ### Screenshots
 
