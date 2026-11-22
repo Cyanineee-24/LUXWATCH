@@ -21,6 +21,8 @@ public class DealerReviewRow : BaseModel
     [Column("order_number")]        public string OrderNumber { get; set; } = "";
     [Column("order_status")]        public string OrderStatus { get; set; } = "";
     [Column("placed_at")]           public DateTime PlacedAt { get; set; }
+    [Column("order_price_php")]     public decimal OrderPricePhp { get; set; }
+    [Column("order_shipping_cost_php")] public decimal OrderShippingCostPhp { get; set; }
     [Column("buyer_id")]            public Guid BuyerId { get; set; }
     [Column("author_username")]     public string AuthorUsername { get; set; } = "";
     [Column("author_name")]         public string AuthorName { get; set; } = "";

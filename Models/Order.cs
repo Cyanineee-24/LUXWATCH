@@ -33,13 +33,15 @@ public class Order
 
     public Dealer Dealer => Watch.Dealer;
 
-    public Order(User buyer, Watch watch, string orderNumber)
+    /// <param name="pricePhp">The order's own price snapshot. Null = a NEW order: copy the watch's current price.</param>
+    /// <param name="shippingCostPhp">The order's own shipping snapshot. Null = copy from the watch.</param>
+    public Order(User buyer, Watch watch, string orderNumber, decimal? pricePhp = null, decimal? shippingCostPhp = null)
     {
         Buyer = buyer ?? throw new ArgumentNullException(nameof(buyer));
         Watch = watch ?? throw new ArgumentNullException(nameof(watch));
         OrderNumber = orderNumber ?? throw new ArgumentNullException(nameof(orderNumber));
-        PricePhp = watch.PricePhp;
-        ShippingCostPhp = watch.ShippingCostPhp;
+        PricePhp = pricePhp ?? watch.PricePhp;
+        ShippingCostPhp = shippingCostPhp ?? watch.ShippingCostPhp;
         PlacedAt = DateTime.UtcNow;
         Status = OrderStatus.PendingPayment;
     }

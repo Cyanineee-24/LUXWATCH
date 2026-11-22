@@ -114,9 +114,10 @@ public static class RowMapping
                 country: row.AuthorCountry ?? "")
             { Id = row.BuyerId };
 
-        // Order(buyer, watch, number) snapshots price from the watch and starts as
-        // PendingPayment; PlacedAt/Status are then set from the database.
-        var order = new Order(buyer, watch, row.OrderNumber)
+        // The order's OWN price snapshot from the database (not the watch's current
+        // price). PlacedAt/Status are set from the database too.
+        var order = new Order(buyer, watch, row.OrderNumber,
+                              pricePhp: row.OrderPricePhp, shippingCostPhp: row.OrderShippingCostPhp)
         {
             Id = row.OrderId,
             PlacedAt = AsUtc(row.PlacedAt),

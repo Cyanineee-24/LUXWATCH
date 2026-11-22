@@ -6,6 +6,7 @@
 @inject IReviewWriteRepository ReviewWrites
 @inject ICurrentUserService CurrentUser
 @inject HelpfulVoteTracker HelpfulVotes
+@inject IOrderRepository Orders
 
 @if (error is not null)
 {
@@ -183,18 +184,91 @@ else
                     </p>
                 </div>
 
-                <!-- Buy button -->
-                <div class="space-y-2">
-                    <Button Variant="ButtonVariant.Primary"
-                            Size="ButtonSize.Lg"
-                            Class="w-full"
-                            OnClick="() => showBuyNotice = true">
-                        BUY
-                    </Button>
-                    @if (showBuyNotice)
+                <!-- Buy (rpc/place_order) -->
+                <div class="space-y-3">
+                    @if (placedOrderNumber is not null)
                     {
-                        <div role="status" class="rounded-md border border-border-strong bg-field p-3 text-xs text-text-secondary">
-                            Checkout arrives in a later update. This page is a preview of the listing.
+                        <div role="status" class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
+                            <span>Order <span class="font-mono font-semibold">@placedOrderNumber</span> placed.</span>
+                            <a href="/account/orders" class="font-semibold underline hover:text-text">View my orders</a>
+                        </div>
+                    }
+
+                    @if (IsOwnListing)
+                    {
+                        <div class="rounded-md border border-border-strong bg-field p-3 text-center text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                            This is your listing
+                        </div>
+                    }
+                    else if (watch.Status == WatchStatus.Reserved)
+                    {
+                        <div class="rounded-md border border-warning/40 bg-warning/10 p-3 text-center text-xs font-semibold uppercase tracking-wider text-warning">
+                            Reserved · a buyer has placed an order
+                        </div>
+                    }
+                    else if (watch.Status == WatchStatus.Sold)
+                    {
+                        <div class="rounded-md border border-border-strong bg-field p-3 text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            Sold
+                        </div>
+                    }
+                    else if (watch.Status == WatchStatus.Active)
+                    {
+                        @if (!buyPanelOpen)
+                        {
+                            <Button Variant="ButtonVariant.Primary"
+                                    Size="ButtonSize.Lg"
+                                    Class="w-full"
+                                    OnClick="OpenBuyPanel">
+                                Buy now
+                            </Button>
+                        }
+                        else
+                        {
+                            <!-- Inline order summary (no JS dialogs) -->
+                            <div class="space-y-3 rounded-lg border border-gold/40 bg-[#0f1420] p-4 text-xs">
+                                <p class="text-sm font-semibold text-text">Order summary</p>
+                                <div class="flex justify-between text-text-secondary">
+                                    <span>Price</span>
+                                    <span>₱@watch.PricePhp.ToString("N0", CultureInfo.InvariantCulture)</span>
+                                </div>
+                                <div class="flex justify-between text-text-secondary">
+                                    <span>Insured shipping</span>
+                                    <span>₱@watch.ShippingCostPhp.ToString("N0", CultureInfo.InvariantCulture)</span>
+                                </div>
+                                <div class="flex justify-between border-t border-border pt-2 text-sm font-bold text-text">
+                                    <span>Total</span>
+                                    <span>₱@((watch.PricePhp + watch.ShippingCostPhp).ToString("N0", CultureInfo.InvariantCulture))</span>
+                                </div>
+                                <p class="text-text-muted">The final price is taken from the listing by the server, not from this page.</p>
+
+                                @if (buyError is not null)
+                                {
+                                    <p role="alert" class="rounded-md border border-error/50 bg-error/10 p-2 text-error">@buyError</p>
+                                }
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <Button Variant="ButtonVariant.Secondary"
+                                            Size="ButtonSize.Sm"
+                                            Disabled="placing"
+                                            OnClick="() => { buyPanelOpen = false; buyError = null; }">
+                                        Cancel
+                                    </Button>
+                                    <!-- Disabled while placing: a double click can't send two orders -->
+                                    <Button Variant="ButtonVariant.Primary"
+                                            Size="ButtonSize.Sm"
+                                            Disabled="placing"
+                                            OnClick="PlaceOrderAsync">
+                                        @(placing ? "Placing…" : "Place order")
+                                    </Button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="rounded-md border border-border-strong bg-field p-3 text-center text-xs font-semibold uppercase tracking-wider text-text-muted">
+                            Not for sale
                         </div>
                     }
                 </div>
@@ -206,7 +280,7 @@ else
                     </h2>
 
                     <div class="space-y-1 text-xs text-text-muted">
-                        <p class="text-text font-medium">Item is in stock</p>
+                        <p class="text-text font-medium">@(watch.Status == WatchStatus.Active ? "Item is in stock" : watch.Status == WatchStatus.Reserved ? "Item is reserved" : "Item is no longer available")</p>
                         <p>Anticipated delivery: @watch.DeliveryWindow</p>
                     </div>
 
@@ -630,7 +704,67 @@ else
     private Watch? watch;
     private int selectedImageIndex = 0;
     private bool isFavorite = false;
-    private bool showBuyNotice = false;
+    // ── Buy (Phase 6) ────────────────────────────────────────────────────────
+    private bool buyPanelOpen;
+    private bool placing;
+    private string? buyError;
+    private string? placedOrderNumber;
+
+    private bool IsOwnListing => currentUser is not null && watch is not null && watch.Dealer.Owner.Id == currentUser.Id;
+
+    private void OpenBuyPanel()
+    {
+        buyPanelOpen = true;
+        buyError = null;
+    }
+
+    /// <summary>
+    /// rpc/place_order (1 POST): the database checks the watch is Active, copies
+    /// its price, creates the order and reserves the watch in one transaction.
+    /// Then reload the watch + dealer stats (2 GETs in parallel) so the page
+    /// shows Reserved and the dealer's active-listing count drops.
+    /// </summary>
+    private async Task PlaceOrderAsync()
+    {
+        if (watch is null || placing) return;
+        placing = true;
+        buyError = null;
+        try
+        {
+            var result = await Orders.PlaceAsync(watch.Id);
+            placedOrderNumber = result.OrderNumber;
+            buyPanelOpen = false;
+            await ReloadWatchAndStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            var error = SupabaseErrors.MapOrder(ex);
+            buyError = error.Message;
+            if (error.Kind == WriteErrorKind.Unavailable)
+            {
+                // Someone else reserved it: show the real status.
+                try { await ReloadWatchAndStatsAsync(); } catch { /* keep the message */ }
+            }
+        }
+        finally
+        {
+            placing = false;
+        }
+    }
+
+    private async Task ReloadWatchAndStatsAsync()
+    {
+        if (watch is null) return;
+        var watchTask = Watches.GetBySlugAsync(Slug);
+        var statsTask = Dealers.GetStatsAsync(watch.Dealer.Id);
+        await Task.WhenAll(watchTask, statsTask);
+        if (watchTask.Result is { } fresh)
+        {
+            stats = statsTask.Result;
+            fresh.Dealer.Stats = stats;
+            watch = fresh;
+        }
+    }
     private bool bannerDismissed = false;
 
     private string selectedFilter = "all";
@@ -745,7 +879,10 @@ else
         reviews = new();
         selectedImageIndex = 0;
         isFavorite = false;
-        showBuyNotice = false;
+        buyPanelOpen = false;
+        placing = false;
+        buyError = null;
+        placedOrderNumber = null;
         selectedFilter = "all";
         selectedSort = "newest";
         visibleCount = 5;
