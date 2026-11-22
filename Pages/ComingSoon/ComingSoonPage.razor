@@ -1,0 +1,38 @@
+@*
+    Real routes for features that aren't built yet, so no UI link ends on
+    "Page not found". To build one, delete its @page line here and give it its
+    own page.
+*@
+@page "/authentication"
+@page "/collector-portal"
+@page "/portal"
+@page "/sell"
+@page "/favorites"
+@page "/help"
+@page "/security"
+@page "/account/forgot-password"
+@inject NavigationManager Nav
+
+<ComingSoon Feature="@info.Feature" Description="@info.Description" />
+
+@code {
+    private static readonly Dictionary<string, (string Feature, string Description)> Features = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["authentication"] = ("Authentication", "Book an independent authentication check, with a photo report, before or after you buy."),
+        ["collector-portal"] = ("Collector Portal", "Track your collection's value over time and manage the watches you own in one place."),
+        ["portal"] = ("Collector Portal", "Track your collection's value over time and manage the watches you own in one place."),
+        ["sell"] = ("Sell your watch", "List your watch with photos and specs, and reach verified buyers with escrow protection."),
+        ["favorites"] = ("Favorites", "Save watches you love and get notified when their price drops."),
+        ["help"] = ("Help centre", "Answers about buying, escrow, shipping and returns, plus a way to contact our support team."),
+        ["security"] = ("Security on LuxWatch", "How escrow, dealer verification and authentication keep every trade safe."),
+        ["account/forgot-password"] = ("Reset your password", "Get a secure link by email to choose a new password once sign-in arrives."),
+    };
+
+    private (string Feature, string Description) info = ("Coming soon", "This part of LuxWatch is on its way.");
+
+    protected override void OnParametersSet()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Split('?', '#')[0].Trim('/');
+        info = Features.TryGetValue(path, out var found) ? found : ("Coming soon", "This part of LuxWatch is on its way.");
+    }
+}

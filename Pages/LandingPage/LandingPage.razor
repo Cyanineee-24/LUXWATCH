@@ -81,7 +81,7 @@
                 <div class="brand-page grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     @foreach (var brand in Brands.Take(10))
                     {
-                        <a href="/brands/@(brand.ToLower().Replace(" ", "-"))"
+                        <a href="/collections/bestsellers"
                            class="flex h-[52px] items-center justify-center rounded-lg border border-border bg-[#131c2b] px-4 font-sans text-sm font-medium text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:text-text">
                             @brand
                         </a>
@@ -92,7 +92,7 @@
                 <div class="brand-page grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                     @foreach (var brand in Brands.Skip(10).Take(10))
                     {
-                        <a href="/brands/@(brand.ToLower().Replace(" ", "-"))"
+                        <a href="/collections/bestsellers"
                            class="flex h-[52px] items-center justify-center rounded-lg border border-border bg-[#131c2b] px-4 font-sans text-sm font-medium text-text-secondary transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/30 hover:text-text">
                             @brand
                         </a>
@@ -128,7 +128,7 @@
         </div>
 
         <div class="carousel-action mt-8 text-center">
-            <a href="/brands"
+            <a href="/collections/bestsellers"
                class="inline-flex items-center justify-center rounded-lg border border-border bg-transparent px-8 py-2.5 font-sans text-sm font-medium text-text transition-all duration-200 hover:border-gold/40 hover:bg-surface">
                 Display all
             </a>

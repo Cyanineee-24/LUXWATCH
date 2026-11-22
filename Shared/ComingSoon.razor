@@ -1,0 +1,22 @@
+@* Styled placeholder for a feature that has a real route but no page yet. *@
+
+<PageTitle>@Feature — LuxWatch</PageTitle>
+
+<Container Class="py-20">
+    <div class="mx-auto max-w-xl rounded-xl border border-border bg-surface p-10 text-center shadow-soft">
+        <span class="inline-flex items-center rounded-full bg-gold/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gold">
+            Coming soon
+        </span>
+        <h1 class="mt-5 font-display text-3xl font-bold tracking-wide text-text">@Feature</h1>
+        <p class="mt-3 text-sm leading-relaxed text-text-secondary">@Description</p>
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Button Href="/collections/bestsellers" Variant="ButtonVariant.Primary" Size="ButtonSize.Sm">Browse watches</Button>
+            <Button Href="/" Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm">Back to home</Button>
+        </div>
+    </div>
+</Container>
+
+@code {
+    [Parameter, EditorRequired] public string Feature { get; set; } = "";
+    [Parameter, EditorRequired] public string Description { get; set; } = "";
+}

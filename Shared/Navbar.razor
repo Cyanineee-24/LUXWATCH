@@ -1,3 +1,4 @@
+@inject NavigationManager Nav
 <!-- ══════════════════════════════════════════════════════════
      TOP BAR — thin trust strip
      ══════════════════════════════════════════════════════════ -->
@@ -12,7 +13,7 @@
         </div>
         <div class="flex items-center gap-5">
             <a href="/help" class="transition-colors hover:text-text">Help</a>
-            <a href="/track" class="transition-colors hover:text-text">Track a Trade</a>
+            <a href="/account/orders" class="transition-colors hover:text-text">Track a Trade</a>
         </div>
     </Container>
 </div>
@@ -57,7 +58,7 @@
                                     @foreach (var brand in MegaMenuBrands)
                                     {
                                         <li>
-                                            <a href="/brands/@(brand.ToLower().Replace(" ", "-"))"
+                                            <a href="/collections/bestsellers" @onclick="CloseBuyMenu"
                                                class="font-display text-sm font-semibold text-text transition-colors hover:text-gold">
                                                 @brand
                                             </a>
@@ -72,7 +73,7 @@
                                     @foreach (var type in WatchTypes)
                                     {
                                         <li>
-                                            <a href="/types/@(type.ToLower().Replace(" ", "-"))"
+                                            <a href="/collections/bestsellers" @onclick="CloseBuyMenu"
                                                class="text-sm text-gold transition-colors hover:text-gold-light">
                                                 @type
                                             </a>
@@ -84,27 +85,31 @@
                         <!-- Footer bar -->
                         <div class="flex items-center justify-between border-t border-border px-6 py-3">
                             <span class="text-xs text-text-muted">Every listing is authenticated before it ships.</span>
-                            <a href="/brands" class="text-xs font-semibold text-gold transition-colors hover:text-gold-light">
-                                View all brands →
+                            <a href="/collections/bestsellers" @onclick="CloseBuyMenu" class="text-xs font-semibold text-gold transition-colors hover:text-gold-light">
+                                View all watches →
                             </a>
                         </div>
                     </div>
                 }
             </div>
             <a href="/authentication" class="text-sm font-semibold text-text transition-colors hover:text-gold">Authentication</a>
-            <a href="/portal" class="text-sm font-semibold text-text transition-colors hover:text-gold">Collector Portal</a>
+            <a href="/collector-portal" class="text-sm font-semibold text-text transition-colors hover:text-gold">Collector Portal</a>
         </nav>
 
         <!-- Search bar (centered, pill-shaped) -->
-        <div class="mx-auto hidden max-w-md flex-1 items-center gap-2.5 rounded-full bg-field px-5 py-2 text-sm text-text-muted lg:flex"
-             role="search" aria-label="Search watches">
+        <!-- Search isn't built yet: Enter takes you to the listings. -->
+        <form class="mx-auto hidden max-w-md flex-1 items-center gap-2.5 rounded-full bg-field px-5 py-2 text-sm text-text-muted lg:flex"
+              role="search" aria-label="Search watches"
+              @onsubmit="GoToListings" @onsubmit:preventDefault>
             <svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <span>Search 25,000+ verified listings</span>
-        </div>
+            <input type="search" aria-label="Search watches"
+                   placeholder="Search 25,000+ verified listings"
+                   class="w-full bg-transparent text-sm text-text placeholder:text-text-muted focus:outline-none" />
+        </form>
 
         <!-- Right actions -->
         <div class="ml-auto hidden items-center gap-4 lg:flex">
@@ -176,20 +181,23 @@
     {
         <div id="mobile-menu" class="border-t border-border lg:hidden" role="navigation" aria-label="Mobile navigation">
             <Container Class="flex flex-col gap-1 py-4">
-                <div class="mb-2 flex items-center gap-2 rounded-full bg-field px-5 py-2.5 text-sm text-text-muted" role="search">
+                <form class="mb-2 flex items-center gap-2 rounded-full bg-field px-5 py-2.5 text-sm text-text-muted" role="search"
+                      @onsubmit="GoToListings" @onsubmit:preventDefault>
                     <svg class="shrink-0 opacity-50" width="15" height="15" viewBox="0 0 24 24" fill="none"
                          stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="11" cy="11" r="7" />
                         <line x1="21" y1="21" x2="16.65" y2="16.65" />
                     </svg>
-                    <span>Search 25,000+ verified listings</span>
-                </div>
+                    <input type="search" aria-label="Search watches"
+                           placeholder="Search 25,000+ verified listings"
+                           class="w-full bg-transparent text-sm text-text placeholder:text-text-muted focus:outline-none" />
+                </form>
 
-                <a href="/" @onclick="CloseMobileMenu"
+                <a href="/collections/bestsellers" @onclick="CloseMobileMenu"
                    class="rounded-md px-3 py-3 text-sm font-semibold text-text transition-colors hover:bg-white/5">Buy</a>
                 <a href="/authentication" @onclick="CloseMobileMenu"
                    class="rounded-md px-3 py-3 text-sm font-semibold text-text transition-colors hover:bg-white/5">Authentication</a>
-                <a href="/portal" @onclick="CloseMobileMenu"
+                <a href="/collector-portal" @onclick="CloseMobileMenu"
                    class="rounded-md px-3 py-3 text-sm font-semibold text-text transition-colors hover:bg-white/5">Collector Portal</a>
 
                 <div class="mt-2 flex flex-col gap-2 border-t border-border pt-3">
@@ -214,6 +222,13 @@
     private void CloseMobileMenu() => mobileMenuCollapsed = true;
     private void OpenBuyMenu() => buyMenuOpen = true;
     private void CloseBuyMenu() => buyMenuOpen = false;
+
+    // Search isn't built yet: send the user to the listings instead of doing nothing.
+    private void GoToListings()
+    {
+        mobileMenuCollapsed = true;
+        Nav.NavigateTo("/collections/bestsellers");
+    }
 
     private static readonly string[] MegaMenuBrands = {
         "Rolex", "Patek Philippe",
