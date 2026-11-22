@@ -796,6 +796,7 @@ else
             confirmingDeleteId = null;
             undoError = null;
             lastDeletedId = id;
+            bannerDismissed = true;            // "review is posted" would now contradict "Review deleted"
             await ReloadReviewsAndStatsAsync();
         }
         catch (Exception ex)
