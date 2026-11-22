@@ -73,3 +73,16 @@ There are three reasons:
 - **No second review.** The removed row still exists, so `unique(order_id)` stops the same order from being reviewed again.
 
 The `SELECT` policy deliberately does **not** filter `deleted_at`. If it did, the soft-delete `UPDATE` would fail RLS, because the updated row would no longer be visible.
+
+**How the app does it:**
+- **Delete** on your own review sends `PATCH reviews?id=eq.… {"deleted_at": "<now>"}`. Every read filters `deleted_at=is.null`.
+- **Undo** sends the same PATCH with `{"deleted_at": null}`, and the review comes back.
+- The database has **no DELETE grant**, so a row can't really be removed from the app.
+
+The code is in `Data/Repositories/ReviewWriteRepository.cs`.
+
+## Reset demo data
+
+Run these three files in the SQL Editor, in order: **`schema.sql` → `seed.sql` → `views.sql`**. `schema.sql` already includes every patch.
+
+You need a reset after testing Create a couple of times. Marcus (the demo user) has only **2 reviewable orders** (`LW-2026-0401`, `LW-2026-0402`), and a soft-deleted review still holds its order (`unique(order_id)`). So after two test reviews there's nothing left to review until you reset. Resetting also clears Helpful counts and soft deletes back to the seed values.

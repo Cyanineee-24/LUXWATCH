@@ -11,6 +11,12 @@ Then open http://localhost:5230. The Supabase Project URL and publishable key ar
 
 Database setup (schema, seed data, views, patches) is in [`database/README.md`](database/README.md).
 
+## Storage pattern: soft delete
+
+Reviews are never physically deleted. **Delete** sets `deleted_at`, every read filters `deleted_at is null`, and **Undo** clears it again. The database has no DELETE grant, so rows can't really be removed from the app. For the reasons and details, see [`database/README.md`](database/README.md#storage-pattern-soft-delete-reviews).
+
+**Reset demo data:** re-run `schema.sql` → `seed.sql` → `views.sql` in the Supabase SQL Editor. The demo user has only 2 reviewable orders, so a reset is needed to test Create more than twice. See [`database/README.md`](database/README.md#reset-demo-data).
+
 ## Architecture
 
 ```
