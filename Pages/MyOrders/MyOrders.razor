@@ -1,0 +1,236 @@
+@page "/account/orders"
+@using System.Globalization
+@inject IOrderRepository Orders
+
+<PageTitle>My orders — LuxWatch</PageTitle>
+
+<Container Class="py-8 md:py-12">
+    <nav aria-label="Breadcrumb" class="mb-6 flex items-center gap-2 text-xs text-text-muted">
+        <a href="/" class="transition-colors hover:text-text">Home</a>
+        <span aria-hidden="true">›</span>
+        <span class="font-medium text-text" aria-current="page">My orders</span>
+    </nav>
+
+    <h1 class="mb-8 font-display text-3xl font-bold tracking-wide text-text md:text-4xl">My orders</h1>
+
+    @if (banner is not null)
+    {
+        <div role="status" class="mb-6 flex items-center justify-between gap-3 rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
+            <span>@banner</span>
+            <button type="button" @onclick="() => banner = null" aria-label="Dismiss" class="text-success/80 hover:text-success">✕</button>
+        </div>
+    }
+
+    @if (error is not null)
+    {
+        <div role="alert" class="rounded-lg border border-error/40 bg-error/10 p-6">
+            <p class="font-semibold text-error">We couldn't load your orders.</p>
+            <p class="mt-1 break-words text-xs text-text-secondary">@error</p>
+            <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4" OnClick="LoadAsync">Retry</Button>
+        </div>
+    }
+    else if (loading && result is null)
+    {
+        <div class="space-y-4" aria-busy="true" aria-label="Loading orders">
+            @for (var i = 0; i < 3; i++)
+            {
+                <div class="flex gap-4 rounded-lg border border-border bg-surface p-4">
+                    <div class="size-24 shrink-0 animate-pulse rounded-md bg-field"></div>
+                    <div class="flex-1 space-y-2">
+                        <div class="h-4 w-1/2 animate-pulse rounded bg-field"></div>
+                        <div class="h-3 w-1/3 animate-pulse rounded bg-field"></div>
+                        <div class="h-4 w-1/4 animate-pulse rounded bg-field"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (result is null || result.Items.Count == 0)
+    {
+        <div class="rounded-lg border border-border bg-surface py-16 text-center">
+            <p class="text-sm text-text-secondary">No orders yet.</p>
+            <Button Href="/collections/bestsellers" Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4">Browse bestsellers</Button>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-4">
+            @foreach (var order in result.Items)
+            {
+                var id = order.OrderId;
+                var busy = busyOrderId == id;
+                var cancelled = order.Status == OrderStatus.Cancelled;
+                <article @key="id" class="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-soft sm:flex-row @(cancelled ? "opacity-60" : "")">
+                    <a href="/watch/@order.WatchSlug" class="size-24 shrink-0 overflow-hidden rounded-md border border-border bg-[#131c2b]">
+                        <img src="@(order.ImageUrl ?? "/images/landing_page_hero_macro.jpg")" alt="@order.BrandName @order.WatchModel" class="h-full w-full object-cover" />
+                    </a>
+
+                    <div class="flex-1 space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <a href="/watch/@order.WatchSlug" class="text-sm font-bold text-text hover:text-gold">@order.BrandName @order.WatchModel</a>
+                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider @StatusClasses(order.Status)">@StatusLabel(order.Status)</span>
+                        </div>
+                        <p class="text-xs text-text-muted">
+                            <span class="font-mono">@order.OrderNumber</span> · placed @order.PlacedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.InvariantCulture)
+                        </p>
+                        <p class="text-sm font-semibold text-text">
+                            ₱@order.TotalPhp.ToString("N0", CultureInfo.InvariantCulture)
+                            <span class="text-xs font-normal text-text-muted">
+                                (₱@order.PricePhp.ToString("N0", CultureInfo.InvariantCulture) + ₱@order.ShippingCostPhp.ToString("N0", CultureInfo.InvariantCulture) shipping)
+                            </span>
+                        </p>
+                        @if (rowErrors.TryGetValue(id, out var rowError))
+                        {
+                            <p role="alert" class="text-xs text-error">@rowError</p>
+                        }
+                    </div>
+
+                    <!-- Actions by status -->
+                    <div class="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:justify-center">
+                        @if (order.Status is OrderStatus.PendingPayment or OrderStatus.InEscrow)
+                        {
+                            @if (confirmingCancelId == id)
+                            {
+                                <span class="text-xs text-text-secondary">Cancel this order?</span>
+                                <div class="flex gap-2">
+                                    <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Disabled="busy" OnClick="() => CancelAsync(order)">
+                                        @(busy ? "Cancelling…" : "Yes, cancel")
+                                    </Button>
+                                    <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" Disabled="busy" OnClick="() => confirmingCancelId = null">Keep</Button>
+                                </div>
+                            }
+                            else
+                            {
+                                <Button Variant="ButtonVariant.Primary" Size="ButtonSize.Sm" Disabled="busy" OnClick="() => ConfirmDeliveryAsync(order)">
+                                    @(busy ? "Confirming…" : "Confirm delivery (demo)")
+                                </Button>
+                                <Button Variant="ButtonVariant.Ghost" Size="ButtonSize.Sm" Disabled="busy" OnClick="() => { confirmingCancelId = id; rowErrors.Remove(id); }">
+                                    Cancel order
+                                </Button>
+                            }
+                        }
+                        else if (order.Status == OrderStatus.Completed && !order.IsReviewed)
+                        {
+                            <Button Href="@($"/watch/{order.WatchSlug}/rate?order={order.OrderId}")" Variant="ButtonVariant.Primary" Size="ButtonSize.Sm">
+                                Rate dealer
+                            </Button>
+                        }
+                        else if (order.Status == OrderStatus.Completed)
+                        {
+                            <span class="text-xs font-semibold text-success">Reviewed ✓</span>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+
+        @if (currentPage > 1 || result.HasNextPage)
+        {
+            <nav aria-label="Pagination" class="mt-8 flex items-center justify-center gap-4">
+                @if (currentPage > 1)
+                {
+                    <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Disabled="loading" OnClick="() => GoToPageAsync(currentPage - 1)">← Previous</Button>
+                }
+                <span class="text-xs text-text-muted">Page @currentPage</span>
+                @if (result.HasNextPage)
+                {
+                    <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Disabled="loading" OnClick="() => GoToPageAsync(currentPage + 1)">Next →</Button>
+                }
+            </nav>
+        }
+    }
+</Container>
+
+@code {
+    private const int PageSize = 10;
+
+    private int currentPage = 1;
+    private MyOrderPage? result;
+    private bool loading = true;
+    private string? error;
+    private string? banner;
+
+    private Guid? busyOrderId;                 // that order's buttons are disabled while its request runs
+    private Guid? confirmingCancelId;          // inline confirm, no JS dialogs
+    private readonly Dictionary<Guid, string> rowErrors = new();
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    /// <summary>ONE request per page: orders + watch + brand + images + review, embedded.</summary>
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            result = await Orders.GetMineAsync(currentPage, PageSize);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task GoToPageAsync(int newPage)
+    {
+        currentPage = Math.Max(1, newPage);
+        banner = null;
+        await LoadAsync();
+    }
+
+    /// <summary>rpc/cancel_order, then reload the list (1 request).</summary>
+    private Task CancelAsync(MyOrder order) => RunAsync(order, async () =>
+    {
+        await Orders.CancelAsync(order.OrderId);
+        confirmingCancelId = null;
+        banner = "Order cancelled. The watch is back on sale.";
+    });
+
+    /// <summary>rpc/confirm_delivery (demo shortcut), then reload the list (1 request).</summary>
+    private Task ConfirmDeliveryAsync(MyOrder order) => RunAsync(order, async () =>
+    {
+        await Orders.ConfirmDeliveryAsync(order.OrderId);
+        banner = "Delivery confirmed. You can now rate the dealer.";
+    });
+
+    private async Task RunAsync(MyOrder order, Func<Task> action)
+    {
+        if (busyOrderId is not null) return;
+        busyOrderId = order.OrderId;
+        rowErrors.Remove(order.OrderId);
+        try
+        {
+            await action();
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            rowErrors[order.OrderId] = SupabaseErrors.MapOrder(ex).Message;
+            // The order may have changed elsewhere (e.g. already confirmed): show its real status.
+            try { await LoadAsync(); } catch { /* keep the message */ }
+        }
+        finally
+        {
+            busyOrderId = null;
+        }
+    }
+
+    private static string StatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.PendingPayment => "Pending payment",
+        OrderStatus.InEscrow => "In escrow",
+        _ => status.ToString()
+    };
+
+    private static string StatusClasses(OrderStatus status) => status switch
+    {
+        OrderStatus.Completed => "bg-success/15 text-success",
+        OrderStatus.Cancelled => "bg-field text-text-muted",
+        OrderStatus.PendingPayment or OrderStatus.InEscrow => "bg-warning/15 text-warning",
+        _ => "bg-gold/15 text-gold"
+    };
+}

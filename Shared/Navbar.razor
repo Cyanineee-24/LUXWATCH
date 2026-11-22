@@ -108,6 +108,18 @@
 
         <!-- Right actions -->
         <div class="ml-auto hidden items-center gap-4 lg:flex">
+            <!-- My orders (demo user; TEMP until Supabase Auth) -->
+            <a href="/account/orders"
+               class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-text-secondary transition-colors hover:text-gold">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+                <span>My orders</span>
+            </a>
+
             <!-- Favorites (heart icon with notification dot) -->
             <a href="/favorites" class="relative grid size-9 place-items-center rounded-md text-text-secondary transition-colors hover:text-gold"
                aria-label="Favorites">
@@ -182,6 +194,8 @@
 
                 <div class="mt-2 flex flex-col gap-2 border-t border-border pt-3">
                     <Button Href="/sell" Variant="ButtonVariant.Primary" Size="ButtonSize.Sm">+ Sell Your Watch</Button>
+                    <a href="/account/orders" @onclick="CloseMobileMenu"
+                       class="rounded-md px-3 py-3 text-sm text-text transition-colors hover:bg-white/5 hover:text-gold">My orders</a>
                     <a href="/favorites" @onclick="CloseMobileMenu"
                        class="rounded-md px-3 py-3 text-sm text-text-secondary transition-colors hover:bg-white/5 hover:text-text">Favorites</a>
                     <a href="/account/login" @onclick="CloseMobileMenu"

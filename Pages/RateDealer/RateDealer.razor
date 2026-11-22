@@ -250,6 +250,9 @@ else
 
     [Parameter] public string Slug { get; set; } = string.Empty;
 
+    // ?order={id} from "Rate dealer" on My orders: preselect it if it's reviewable, otherwise ignore it.
+    [SupplyParameterFromQuery(Name = "order")] public string? OrderParam { get; set; }
+
     private Watch? watch;
     private User? currentUser;
     private List<ReviewableOrder> reviewable = new();
@@ -316,7 +319,11 @@ else
     private async Task LoadReviewableAsync(Guid dealerId)
     {
         reviewable = (await Orders.GetReviewableAsync(currentUser!.Id, dealerId)).ToList();
-        if (SelectedOrder is null) selectedOrderId = reviewable.FirstOrDefault()?.OrderId;
+        if (SelectedOrder is null)
+        {
+            var requested = Guid.TryParse(OrderParam, out var id) ? reviewable.FirstOrDefault(o => o.OrderId == id) : null;
+            selectedOrderId = (requested ?? reviewable.FirstOrDefault())?.OrderId;
+        }
     }
 
     private void OnOrderChanged(ChangeEventArgs e)
