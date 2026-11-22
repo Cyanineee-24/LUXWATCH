@@ -46,28 +46,7 @@ else
     <PageTitle>@watch.Brand.Name @watch.Model — LuxWatch</PageTitle>
 
     <Container Class="py-8 md:py-12">
-        <!-- 1. Success banner (only when reviewed=true in query string) -->
-        @if (Reviewed && !bannerDismissed)
-        {
-            <div role="status" class="mb-6 flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
-                <div class="flex items-center gap-2">
-                    <svg class="size-4 shrink-0 text-success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                    </svg>
-                    <span>Thanks, your review is now live.</span>
-                </div>
-                <button type="button"
-                        @onclick="() => bannerDismissed = true"
-                        aria-label="Dismiss notification"
-                        class="rounded p-1 text-success/80 hover:bg-success/20 hover:text-success transition-colors">
-                    <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                    </svg>
-                </button>
-            </div>
-        }
-
-        <!-- 2. Breadcrumb -->
+        <!-- Breadcrumb -->
         <nav aria-label="Breadcrumb" class="mb-6 flex flex-wrap items-center gap-2 text-xs text-text-muted">
             <a href="/" class="transition-colors hover:text-text">Home</a>
             <span aria-hidden="true">›</span>
@@ -367,6 +346,27 @@ else
                 Dealer reviews (@ReviewCount)
             </h2>
 
+            <!-- Success banner after a POST from the Rate Dealer page (?reviewed=1) -->
+            @if (Reviewed && !bannerDismissed)
+            {
+                <div role="status" class="mb-6 flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
+                    <div class="flex items-center gap-2">
+                        <svg class="size-4 shrink-0 text-success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Thanks, your review is posted.</span>
+                    </div>
+                    <button type="button"
+                            @onclick="() => bannerDismissed = true"
+                            aria-label="Dismiss notification"
+                            class="rounded p-1 text-success/80 hover:bg-success/20 hover:text-success transition-colors">
+                        <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                    </button>
+                </div>
+            }
+
             <!-- Left summary + Right distribution bars -->
             <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                 <!-- Left summary -->
@@ -559,7 +559,9 @@ else
 
 @code {
     [Parameter] public string Slug { get; set; } = string.Empty;
-    [SupplyParameterFromQuery(Name = "reviewed")] public bool Reviewed { get; set; }
+    // ?reviewed=1 after a successful POST from the Rate Dealer page.
+    [SupplyParameterFromQuery(Name = "reviewed")] public string? ReviewedParam { get; set; }
+    private bool Reviewed => ReviewedParam is "1" or "true";
 
     private Watch? watch;
     private int selectedImageIndex = 0;

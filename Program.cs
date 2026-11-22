@@ -27,6 +27,8 @@ builder.Services.AddSingleton(supabase);
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IWatchRepository, LuxWatch.Data.Repositories.SupabaseWatchRepository>();
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IDealerRepository, LuxWatch.Data.Repositories.SupabaseDealerRepository>();
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IReviewReadRepository, LuxWatch.Data.Repositories.SupabaseReviewReadRepository>();
+builder.Services.AddSingleton<LuxWatch.Data.Repositories.IOrderRepository, LuxWatch.Data.Repositories.SupabaseOrderRepository>();
+builder.Services.AddSingleton<LuxWatch.Data.Repositories.IReviewWriteRepository, LuxWatch.Data.Repositories.SupabaseReviewWriteRepository>();
 
 // TEMP until Supabase Auth: the demo user from wwwroot/appsettings.json (Demo:CurrentUsername).
 var demoUsername = builder.Configuration["Demo:CurrentUsername"];
