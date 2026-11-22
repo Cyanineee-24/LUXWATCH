@@ -3,6 +3,9 @@
 @inject IWatchRepository Watches
 @inject IDealerRepository Dealers
 @inject IReviewReadRepository Reviews
+@inject IReviewWriteRepository ReviewWrites
+@inject ICurrentUserService CurrentUser
+@inject HelpfulVoteTracker HelpfulVotes
 
 @if (error is not null)
 {
@@ -346,6 +349,27 @@ else
                 Dealer reviews (@ReviewCount)
             </h2>
 
+            <!-- Soft delete feedback with Undo -->
+            @if (lastDeletedId is not null)
+            {
+                <div role="status" class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-strong bg-field px-4 py-3 text-xs sm:text-sm text-text">
+                    <span>Review deleted.</span>
+                    <div class="flex items-center gap-3">
+                        @if (undoError is not null)
+                        {
+                            <span class="text-xs text-error">@undoError</span>
+                        }
+                        <button type="button"
+                                @onclick="UndoDeleteAsync"
+                                disabled="@undoing"
+                                class="font-semibold uppercase tracking-wider text-gold hover:text-gold-light disabled:opacity-50">
+                            @(undoing ? "Restoring…" : "Undo")
+                        </button>
+                        <button type="button" @onclick="() => lastDeletedId = null" aria-label="Dismiss" class="text-text-muted hover:text-text">✕</button>
+                    </div>
+                </div>
+            }
+
             <!-- Success banner after a POST from the Rate Dealer page (?reviewed=1) -->
             @if (Reviewed && !bannerDismissed)
             {
@@ -514,19 +538,59 @@ else
                                 @review.Comment
                             </p>
 
-                            <!-- Helpful button: count from the database; voting is wired in Phase 5 -->
-                            <div class="flex justify-end pt-1">
+                            <!-- Actions: Delete (own reviews only) + Helpful -->
+                            @{
+                                var reviewId = review.Id;
+                                var voted = HelpfulVotes.HasVoted(reviewId);
+                                var helpfulBusy = helpfulPending.Contains(reviewId);
+                                var isOwn = currentUser is not null && review.Author.Id == currentUser.Id;
+                            }
+                            <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+                                @if (isOwn)
+                                {
+                                    @if (confirmingDeleteId == reviewId)
+                                    {
+                                        <!-- Inline confirm (no JS dialogs) -->
+                                        <span class="text-xs text-text-secondary">Delete this review?</span>
+                                        <button type="button"
+                                                @onclick="() => DeleteAsync(review)"
+                                                disabled="@(deletingId == reviewId)"
+                                                class="rounded border border-error/50 px-2 py-1 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-50">
+                                            @(deletingId == reviewId ? "Deleting…" : "Delete")
+                                        </button>
+                                        <button type="button"
+                                                @onclick="() => confirmingDeleteId = null"
+                                                disabled="@(deletingId == reviewId)"
+                                                class="rounded px-2 py-1 text-xs text-text-muted hover:text-text disabled:opacity-50">
+                                            Cancel
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                @onclick="() => { confirmingDeleteId = reviewId; cardErrors.Remove(reviewId); }"
+                                                class="rounded px-2 py-1 text-xs text-text-muted transition-colors hover:text-error">
+                                            Delete
+                                        </button>
+                                    }
+                                }
+
                                 <button type="button"
-                                        disabled
-                                        title="Coming soon"
-                                        class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-text-muted transition-colors disabled:cursor-default disabled:opacity-50">
-                                    <span>Helpful?</span>
-                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        @onclick="() => MarkHelpfulAsync(review)"
+                                        disabled="@(voted || helpfulBusy)"
+                                        aria-pressed="@(voted ? "true" : "false")"
+                                        class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors disabled:cursor-default @(voted ? "text-gold" : "text-text-muted hover:text-text disabled:opacity-50")">
+                                    <span>@(voted ? "Helpful ✓" : "Helpful?")</span>
+                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="@(voted ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
                                     </svg>
-                                    <span>@review.Helpful</span>
+                                    <span>@HelpfulCount(review)</span>
                                 </button>
                             </div>
+                            @if (cardErrors.TryGetValue(reviewId, out var cardError))
+                            {
+                                <p role="alert" class="text-right text-xs text-error">@cardError</p>
+                            }
                         </article>
                     }
                 </div>
@@ -604,6 +668,17 @@ else
     private bool loadingMoreReviews;
     private string? moreReviewsError;
 
+    // ── Writes (Phase 5) ─────────────────────────────────────────────────────
+    private User? currentUser;
+    private readonly Dictionary<Guid, int> helpfulCounts = new();   // in-place count after a Helpful PATCH
+    private readonly HashSet<Guid> helpfulPending = new();          // button disabled while its PATCH runs
+    private readonly Dictionary<Guid, string> cardErrors = new();   // inline error per review card
+    private Guid? confirmingDeleteId;
+    private Guid? deletingId;
+    private Guid? lastDeletedId;                                    // shows "Review deleted. Undo"
+    private bool undoing;
+    private string? undoError;
+
     private int ReviewCount => stats?.ReviewCount ?? reviews.Count;
     private bool HasMoreReviews => reviews.Count < ReviewCount;
 
@@ -639,12 +714,15 @@ else
             {
                 var statsTask = Dealers.GetStatsAsync(w.Dealer.Id);
                 var reviewsTask = Reviews.GetForDealerAsync(w.Dealer.Id, 1, ReviewPageSize);
-                await Task.WhenAll(statsTask, reviewsTask);
+                // Cached after the first page of the session (TEMP until Supabase Auth).
+                var userTask = CurrentUser.GetAsync();
+                await Task.WhenAll(statsTask, reviewsTask, userTask);
 
                 stats = statsTask.Result;
                 w.Dealer.Stats = stats;
                 reviews = reviewsTask.Result.ToList();
                 reviewsPage = 1;
+                currentUser = userTask.Result;
             }
             watch = w;                   // null → "Watch not found"
             loadedSlug = Slug;
@@ -671,6 +749,112 @@ else
         selectedFilter = "all";
         selectedSort = "newest";
         visibleCount = 5;
+        helpfulCounts.Clear();
+        helpfulPending.Clear();
+        cardErrors.Clear();
+        confirmingDeleteId = null;
+        deletingId = null;
+        lastDeletedId = null;
+        undoError = null;
+    }
+
+    private int HelpfulCount(Review review) =>
+        helpfulCounts.TryGetValue(review.Id, out var c) ? c : review.Helpful;
+
+    /// <summary>Step 8 · Update: PATCH helpful_count + 1, then update just this card.</summary>
+    private async Task MarkHelpfulAsync(Review review)
+    {
+        var id = review.Id;
+        if (HelpfulVotes.HasVoted(id) || !helpfulPending.Add(id)) return;
+        cardErrors.Remove(id);
+        try
+        {
+            var next = await ReviewWrites.MarkHelpfulAsync(id, HelpfulCount(review));
+            helpfulCounts[id] = next;          // in place: no page or stats reload
+            HelpfulVotes.MarkVoted(id);
+        }
+        catch (Exception ex)
+        {
+            cardErrors[id] = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            helpfulPending.Remove(id);
+        }
+    }
+
+    /// <summary>Step 8 · Delete (soft): PATCH deleted_at = now(), then reload reviews + stats.</summary>
+    private async Task DeleteAsync(Review review)
+    {
+        var id = review.Id;
+        if (deletingId is not null) return;
+        deletingId = id;
+        cardErrors.Remove(id);
+        try
+        {
+            await ReviewWrites.SoftDeleteAsync(id);
+            confirmingDeleteId = null;
+            undoError = null;
+            lastDeletedId = id;
+            await ReloadReviewsAndStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            cardErrors[id] = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            deletingId = null;
+        }
+    }
+
+    /// <summary>Undo: PATCH deleted_at = null (the row was never removed), then reload.</summary>
+    private async Task UndoDeleteAsync()
+    {
+        if (lastDeletedId is not Guid id || undoing) return;
+        undoing = true;
+        undoError = null;
+        try
+        {
+            await ReviewWrites.RestoreAsync(id);
+            lastDeletedId = null;
+            await ReloadReviewsAndStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            undoError = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            undoing = false;
+        }
+    }
+
+    /// <summary>
+    /// After a write that changes the list: back to page 1, and reload stats in
+    /// parallel (1 + 2 requests) so count, average, recommend % and star bars agree.
+    /// </summary>
+    private async Task ReloadReviewsAndStatsAsync()
+    {
+        if (watch is null) return;
+        try
+        {
+            var statsTask = Dealers.GetStatsAsync(watch.Dealer.Id);
+            var reviewsTask = Reviews.GetForDealerAsync(watch.Dealer.Id, 1, ReviewPageSize);
+            await Task.WhenAll(statsTask, reviewsTask);
+
+            stats = statsTask.Result;
+            watch.Dealer.Stats = stats;
+            reviews = reviewsTask.Result.ToList();
+            reviewsPage = 1;
+            visibleCount = 5;
+            helpfulCounts.Clear();             // fresh counts from the database
+            moreReviewsError = null;
+        }
+        catch (Exception ex)
+        {
+            moreReviewsError = "Saved, but the list couldn't refresh: " + SupabaseErrors.Map(ex).Message;
+        }
     }
 
     private async Task LoadMoreReviewsAsync()
