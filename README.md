@@ -64,6 +64,10 @@ Open the page, then **DevTools → Network**, filter by `supabase.co`, and reloa
 - `/collections/bestsellers` shows **1** request (`/rest/v1/watches?…status=eq.Active…`). Click **Next** and exactly 1 more appears.
 - `/watch/rolex-submariner-14060` shows **4** requests: `watches?slug=eq.…`, `dealer_stats?…`, `dealer_reviews?…deleted_at=is.null…`, and `watches?id=in.(…)`.
 
+## Known gaps
+
+- **Order price snapshot:** when reviews are loaded, the `Order` object takes its price from the watch's current price instead of the order's stored `price_php` / `shipping_cost_php`. The order price isn't shown anywhere in the UI.
+
 ## Milestone checklist
 
 | Rubric item | Where it lives |
