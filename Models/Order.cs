@@ -128,31 +128,4 @@ public class Order
         AuthenticationReport = report;
         return report;
     }
-
-    internal static Order CreateSeededCompletedOrder(User buyer, Watch watch, string orderNumber, DateTime placedAt, DateTime deliveredAt)
-    {
-        var order = new Order(buyer, watch, orderNumber)
-        {
-            PlacedAt = placedAt,
-            Status = OrderStatus.Completed
-        };
-        var payment = new Payment(order, watch.PricePhp + watch.ShippingCostPhp, "Escrow")
-        {
-            HeldAt = placedAt,
-            ReleasedAt = deliveredAt,
-            Status = PaymentStatus.Released
-        };
-        order.Payment = payment;
-
-        var shipment = new Shipment(order, "DHL Express", $"LW-TRK-{order.Id.ToString()[..8].ToUpperInvariant()}")
-        {
-            ShippedAt = placedAt.AddDays(1),
-            DeliveredAt = deliveredAt
-        };
-        order.Shipment = shipment;
-
-        buyer.AddOrderInternal(order);
-        watch.AddOrder(order);
-        return order;
-    }
 }

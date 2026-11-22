@@ -7,8 +7,6 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddSingleton<LuxWatch.Services.ReviewService>();
-builder.Services.AddSingleton<LuxWatch.Services.IReviewService>(sp => sp.GetRequiredService<LuxWatch.Services.ReviewService>());
 
 // Supabase: one client for the whole app, injected with @inject Supabase.Client.
 // Config comes from wwwroot/appsettings.json (publishable key only — it is public by design).
@@ -23,7 +21,7 @@ var supabase = new Supabase.Client(url, key,
 await supabase.InitializeAsync();
 builder.Services.AddSingleton(supabase);
 
-// Read repositories: stateless, wrap the singleton client → singletons.
+// Repositories (reads and writes): stateless, wrap the singleton client → singletons.
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IWatchRepository, LuxWatch.Data.Repositories.SupabaseWatchRepository>();
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IDealerRepository, LuxWatch.Data.Repositories.SupabaseDealerRepository>();
 builder.Services.AddSingleton<LuxWatch.Data.Repositories.IReviewReadRepository, LuxWatch.Data.Repositories.SupabaseReviewReadRepository>();

@@ -22,7 +22,7 @@ public static class RowMapping
             ? result
             : throw new InvalidOperationException($"Unknown {typeof(T).Name} '{value}' in column '{column}'.");
 
-    /// <summary>year + year_is_approximate → the display string SampleData used: "1998 (approx.)" / "2002".</summary>
+    /// <summary>year + year_is_approximate → the display string the UI has always shown: "1998 (approx.)" / "2002".</summary>
     public static string FormatYear(int? year, bool isApproximate) =>
         year is null ? "" : isApproximate ? $"{year} (approx.)" : year.Value.ToString();
 
