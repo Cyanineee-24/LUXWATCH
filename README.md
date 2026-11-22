@@ -55,7 +55,31 @@ Every filter, sort and page limit is added **before** `.Get()`, so Postgres does
 
 There is never a `.Get()` inside a loop.
 
+The **first** detail page of a session makes one extra request: the demo user (`users?username=eq.marcusvance`, needed to show Delete on your own reviews). It runs in parallel with the others and is cached afterwards, so every later detail page makes 4.
+
+**Writes** are one request each: Submit review is 1 POST, Helpful is 1 PATCH, Delete and Undo are each 1 PATCH. After Delete or Undo, the reviews and stats reload in parallel (3 GETs).
+
 ### How to check it yourself
 Open the page, then **DevTools → Network**, filter by `supabase.co`, and reload:
 - `/collections/bestsellers` shows **1** request (`/rest/v1/watches?…status=eq.Active…`). Click **Next** and exactly 1 more appears.
 - `/watch/rolex-submariner-14060` shows **4** requests: `watches?slug=eq.…`, `dealer_stats?…`, `dealer_reviews?…deleted_at=is.null…`, and `watches?id=in.(…)`.
+
+## Milestone checklist
+
+| Rubric item | Where it lives |
+|---|---|
+| **Table design** | [`database/schema.sql`](database/schema.sql): 8 Tier 1 tables, uuid keys, CHECKs, FK indexes, RLS. Read views are in [`database/views.sql`](database/views.sql). The table → UML map is in [`database/README.md`](database/README.md). |
+| **Read** | `/collections/bestsellers` (active listings, paged) and `/watch/{slug}` (watch, dealer stats, reviews) |
+| **Create** | **Submit review** on `/watch/{slug}/rate`: `POST /reviews` |
+| **Update** | **Helpful** on a review card: `PATCH helpful_count` |
+| **Delete** | **Delete** / **Undo** on your own review: `PATCH deleted_at` (soft delete) |
+| **Fast habits** | [Fast habits](#fast-habits-data-access) above |
+| **Storage pattern** | [Storage pattern: soft delete](#storage-pattern-soft-delete) above, with details in [`database/README.md`](database/README.md#storage-pattern-soft-delete-reviews) |
+
+### Screenshots
+
+| The app | Supabase Table Editor |
+|---|---|
+| ![LuxWatch app](docs/screenshots/app.png) | ![Supabase Table Editor](docs/screenshots/table-editor.png) |
+
+_Placeholders: add `docs/screenshots/app.png` and `docs/screenshots/table-editor.png`._
