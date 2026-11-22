@@ -39,6 +39,8 @@ select
     o.order_number,
     o.status     as order_status,      -- Review requires a Delivered/Completed order
     o.placed_at,
+    o.price_php           as order_price_php,          -- the order's own snapshot,
+    o.shipping_cost_php   as order_shipping_cost_php,  -- not the watch's current price
     o.buyer_id,
     u.username   as author_username,   -- User requires a username
     u.full_name  as author_name,

@@ -62,3 +62,38 @@ apikey: {{key}}
 # Expect 401/403 "permission denied for table users".
 GET {{url}}/rest/v1/users?select=email
 apikey: {{key}}
+
+# ── Ordering (patch 002) ──────────────────────────────────────────────────────
+# Get the ids first:
+#   GET {{url}}/rest/v1/watches?select=id,slug,status&status=eq.Active&limit=3
+#   GET {{url}}/rest/v1/users?select=id,username&username=eq.marcusvance
+
+### Place an order through the function: should be 200 with the new order
+# (order_number LW-<year>-1001…, status PendingPayment, price copied from the watch)
+POST {{url}}/rest/v1/rpc/place_order
+apikey: {{key}}
+Content-Type: application/json
+
+{ "p_watch_id": "PASTE-ACTIVE-WATCH-UUID", "p_buyer_id": "PASTE-MARCUS-UUID" }
+
+### Same call again: should FAIL with message WATCH_NOT_AVAILABLE (watch is now Reserved)
+POST {{url}}/rest/v1/rpc/place_order
+apikey: {{key}}
+Content-Type: application/json
+
+{ "p_watch_id": "PASTE-ACTIVE-WATCH-UUID", "p_buyer_id": "PASTE-MARCUS-UUID" }
+
+### Should FAIL: direct insert into orders (no INSERT grant: the function is the only way in)
+# Expect 401/403 "permission denied for table orders".
+POST {{url}}/rest/v1/orders
+apikey: {{key}}
+Content-Type: application/json
+
+{ "order_number": "LW-HACK-0001", "buyer_id": "PASTE-MARCUS-UUID", "watch_id": "PASTE-ACTIVE-WATCH-UUID", "price_php": 1 }
+
+### Cancel that order (puts the watch back on sale)
+POST {{url}}/rest/v1/rpc/cancel_order
+apikey: {{key}}
+Content-Type: application/json
+
+{ "p_order_id": "PASTE-ORDER-UUID", "p_buyer_id": "PASTE-MARCUS-UUID" }

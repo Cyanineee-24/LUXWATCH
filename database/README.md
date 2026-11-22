@@ -14,6 +14,8 @@ Postgres schema and demo data for the Tier 1 tables. The Blazor WebAssembly app 
    - **Run it again after any re-run of `schema.sql`.** The reset drops the tables with `cascade`, which also drops the views.
 5. **Patches (`patches/NNN_*.sql`)** are one-off fixes for a project that was **already** set up with an older `schema.sql`. Run any you haven't run yet, in number order. A fresh `schema.sql` already includes them.
    - `001_users_column_grant.sql`: hides `users.email` from the publishable key.
+   - `002_ordering.sql`: the order number sequence and the `place_order`, `cancel_order` and `confirm_delivery` functions (see "Ordering" below). After running it, **re-run `views.sql`** too, because `dealer_reviews` gained the order's own price columns.
+   - **Full reset order:** `schema.sql` → `seed.sql` → `views.sql`. The patches are already in `schema.sql`.
 6. Test the API with **`test.http`** (VS Code REST Client extension). Fill in the URL and key locally, and don't commit them.
 
 **Where to find the URL and key:** dashboard → **Project Settings → API Keys**. Copy the **Project URL** (`https://<ref>.supabase.co`) and the **Publishable key** (`sb_publishable_…`). The project URL is also shown under **Project Settings → Data API**.
@@ -86,3 +88,18 @@ The code is in `Data/Repositories/ReviewWriteRepository.cs`.
 Run these three files in the SQL Editor, in order: **`schema.sql` → `seed.sql` → `views.sql`**. `schema.sql` already includes every patch.
 
 You need a reset after testing Create a couple of times. Marcus (the demo user) has only **2 reviewable orders** (`LW-2026-0401`, `LW-2026-0402`), and a soft-deleted review still holds its order (`unique(order_id)`). So after two test reviews there's nothing left to review until you reset. Resetting also clears Helpful counts and soft deletes back to the seed values.
+
+## Ordering (functions, not write grants)
+
+The publishable key is public. If `anon` could `INSERT` into `orders` or `UPDATE` `watches`, anyone could create an order at any price or mark any watch Sold. So **`anon` has no write grant on either table.** Instead, three `security definer` functions each do one whole operation in a single transaction: they validate every input, lock the rows involved, and copy the price from the database. `anon` may only **execute** them, through `POST /rest/v1/rpc/<name>`.
+
+| Function | From order status | Order becomes | Watch becomes | Error keys (errcode `P0001`) |
+|---|---|---|---|---|
+| `place_order(p_watch_id, p_buyer_id)` | (new) | `PendingPayment`; price and shipping copied from the watch | `Active` → `Reserved` | `WATCH_NOT_FOUND`, `WATCH_NOT_AVAILABLE`, `BUYER_NOT_FOUND`, `CANNOT_BUY_OWN_WATCH` |
+| `cancel_order(p_order_id, p_buyer_id)` | `PendingPayment`, `InEscrow` | `Cancelled` | `Reserved` → `Active` (back on sale) | `ORDER_NOT_FOUND`, `ORDER_NOT_CANCELLABLE` |
+| `confirm_delivery(p_order_id, p_buyer_id)` | `PendingPayment`, `InEscrow`, `Shipped`, `Delivered` | `Completed` (now reviewable) | `Sold` | `ORDER_NOT_FOUND`, `ORDER_NOT_CONFIRMABLE` |
+
+- **Two buyers at once:** `place_order` locks the watch row (`for update`), so the second buyer sees `WATCH_NOT_AVAILABLE`. The partial unique index "one non-cancelled order per watch" is the last line of defence (`23505`).
+- **Not your order:** a missing order and someone else's order give the same `ORDER_NOT_FOUND`, so other people's orders don't leak.
+- **Demo shortcut:** `confirm_delivery` stands in for pay → ship → deliver until the payment and shipment tables exist.
+- **TODO (auth):** `p_buyer_id` is passed by the app (the demo user). Under the class policy any caller can act as any buyer. With Supabase Auth this becomes `auth.uid()`.
