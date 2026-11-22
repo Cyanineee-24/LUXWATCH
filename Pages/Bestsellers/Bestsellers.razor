@@ -1,0 +1,139 @@
+@page "/collections/bestsellers"
+@inject IWatchRepository Watches
+
+<PageTitle>Bestsellers — LuxWatch</PageTitle>
+
+<Container Class="py-8 md:py-12">
+    <nav aria-label="Breadcrumb" class="mb-6 flex items-center gap-2 text-xs text-text-muted">
+        <a href="/" class="transition-colors hover:text-text">Home</a>
+        <span aria-hidden="true">›</span>
+        <span class="font-medium text-text" aria-current="page">Bestsellers</span>
+    </nav>
+
+    <div class="mb-8">
+        <h1 class="font-display text-3xl font-bold tracking-wide text-text md:text-4xl">Bestsellers</h1>
+        <p class="mt-2 text-sm text-text-secondary">Timeless classics from verified dealers, newest listings first.</p>
+    </div>
+
+    @if (error is not null)
+    {
+        <div role="alert" class="rounded-lg border border-error/40 bg-error/10 p-6">
+            <p class="font-semibold text-error">We couldn't load the listings.</p>
+            <p class="mt-1 break-words text-xs text-text-secondary">@error</p>
+            <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4" OnClick="RetryAsync">Retry</Button>
+        </div>
+    }
+    else if (loading)
+    {
+        <!-- Loading skeleton -->
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true" aria-label="Loading listings">
+            @for (var i = 0; i < 8; i++)
+            {
+                <div class="overflow-hidden rounded-lg border border-border bg-surface">
+                    <div class="aspect-square w-full animate-pulse bg-field"></div>
+                    <div class="space-y-2 p-4">
+                        <div class="h-4 w-3/4 animate-pulse rounded bg-field"></div>
+                        <div class="h-3 w-1/2 animate-pulse rounded bg-field"></div>
+                        <div class="h-5 w-1/3 animate-pulse rounded bg-field pt-2"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (result is null || result.Items.Count == 0)
+    {
+        <div class="rounded-lg border border-border bg-surface py-16 text-center">
+            <p class="text-sm text-text-secondary">No watches listed right now.</p>
+            @if (currentPage > 1)
+            {
+                <Button Href="/collections/bestsellers" Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4">Back to page 1</Button>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            @foreach (var watch in result.Items)
+            {
+                <WatchCard @key="watch.Id"
+                           Watch="watch"
+                           IsFavorite="favorites.Contains(watch.Id)"
+                           IsFavoriteChanged="on => ToggleFavorite(watch.Id, on)" />
+            }
+        </div>
+
+        <!-- Previous / Next -->
+        @if (currentPage > 1 || result.HasNextPage)
+        {
+            <nav aria-label="Pagination" class="mt-10 flex items-center justify-center gap-4">
+                @if (currentPage > 1)
+                {
+                    <Button Href="@PageUrl(currentPage - 1)" Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm">← Previous</Button>
+                }
+                <span class="text-xs text-text-muted">Page @currentPage</span>
+                @if (result.HasNextPage)
+                {
+                    <Button Href="@PageUrl(currentPage + 1)" Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm">Next →</Button>
+                }
+            </nav>
+        }
+    }
+</Container>
+
+@code {
+    private const int PageSize = 12;
+
+    // Read as a string so ?page=abc doesn't throw: invalid/zero/negative → 1.
+    [SupplyParameterFromQuery(Name = "page")] public string? PageParam { get; set; }
+
+    private int currentPage = 1;
+    private int? loadedPage;          // guards against reloading the same page
+    private bool loading = true;
+    private string? error;
+    private WatchPage? result;
+    private readonly HashSet<Guid> favorites = new();   // in-memory only, like the detail page
+
+    private static int ParsePage(string? value) =>
+        int.TryParse(value, out var p) && p >= 1 ? p : 1;
+
+    private static string PageUrl(int page) =>
+        page <= 1 ? "/collections/bestsellers" : $"/collections/bestsellers?page={page}";
+
+    // OnParametersSetAsync (not OnInitializedAsync): clicking Next/Previous keeps
+    // the same component instance and only changes the query string.
+    protected override async Task OnParametersSetAsync()
+    {
+        var requested = ParsePage(PageParam);
+        if (requested == loadedPage) return;
+        currentPage = requested;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            // ONE request: active only, newest first, paged in the database (pageSize + 1 rows).
+            result = await Watches.GetActiveAsync(currentPage, PageSize);
+            loadedPage = currentPage;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            loadedPage = null;   // allow Retry / re-navigation to load again
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private Task RetryAsync() => LoadAsync();
+
+    private void ToggleFavorite(Guid id, bool on)
+    {
+        if (on) favorites.Add(id); else favorites.Remove(id);
+    }
+}

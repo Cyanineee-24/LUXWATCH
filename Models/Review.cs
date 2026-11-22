@@ -5,7 +5,7 @@ namespace LuxWatch.Models;
 /// </summary>
 public class Review
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public int Overall { get; private set; }
     public int Shipping { get; private set; }

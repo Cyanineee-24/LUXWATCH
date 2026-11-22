@@ -5,7 +5,7 @@ namespace LuxWatch.Models;
 /// </summary>
 public class Dealer
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Name { get; private set; }
     public string Country { get; private set; }
@@ -14,12 +14,6 @@ public class Dealer
     public string RespondsWithin { get; private set; }
     public bool IsVerified { get; private set; }
 
-    // TEMP (front-end only): remove once real data exists
-    public int SeedWatchesSoldBaseline { get; init; }
-
-    // TEMP (front-end only): remove once real data exists
-    public int SeedActiveListingsBaseline { get; init; }
-
     // UML: 0..1 ── 1
     public User Owner { get; private set; }
 
@@ -27,9 +21,18 @@ public class Dealer
     // UML: 1 ── 0..*
     public IReadOnlyList<Watch> Watches => _watches;
 
-    public int WatchesSold => _watches.Count(w => w.Status == WatchStatus.Sold) + SeedWatchesSoldBaseline;
+    /// <summary>
+    /// Derived numbers computed by the database (dealer_stats view). When set,
+    /// the counts and ratings below come from here instead of from whatever
+    /// watches/orders happen to be loaded in memory.
+    /// </summary>
+    public DealerStats? Stats { get; set; }
 
-    public int ActiveListings => _watches.Count(w => w.Status == WatchStatus.Active) + SeedActiveListingsBaseline;
+    public int WatchesSold => Stats?.WatchesSold ?? _watches.Count(w => w.Status == WatchStatus.Sold);
+
+    public int ActiveListings => Stats?.ActiveListings ?? _watches.Count(w => w.Status == WatchStatus.Active);
+
+    public int ReviewCount => Stats?.ReviewCount ?? LoadedReviews().Count;
 
     public Dealer(
         User owner,
@@ -38,9 +41,7 @@ public class Dealer
         DateOnly since,
         string shipsWithin,
         string respondsWithin,
-        bool isVerified = false,
-        int seedWatchesSoldBaseline = 0,
-        int seedActiveListingsBaseline = 0)
+        bool isVerified = false)
     {
         Owner = owner ?? throw new ArgumentNullException(nameof(owner));
         Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -49,8 +50,6 @@ public class Dealer
         ShipsWithin = shipsWithin;
         RespondsWithin = respondsWithin;
         IsVerified = isVerified;
-        SeedWatchesSoldBaseline = seedWatchesSoldBaseline;
-        SeedActiveListingsBaseline = seedActiveListingsBaseline;
 
         owner.Dealer = this;
     }
@@ -69,14 +68,20 @@ public class Dealer
 
     public double GetAverageRating()
     {
-        var reviews = _watches
-            .SelectMany(w => w.Orders)
-            .Select(o => o.Review)
-            .Where(r => r != null)
-            .ToList();
+        if (Stats is not null)
+        {
+            return Stats.AvgOverall is decimal avg ? (double)avg : 0.0;
+        }
 
-        return reviews.Count > 0 ? reviews.Average(r => r!.Overall) : 0.0;
+        var reviews = LoadedReviews();
+        return reviews.Count > 0 ? reviews.Average(r => r.Overall) : 0.0;
     }
+
+    private List<Review> LoadedReviews() => _watches
+        .SelectMany(w => w.Orders)
+        .Select(o => o.Review)
+        .OfType<Review>()
+        .ToList();
 
     public void Verify()
     {

@@ -1,16 +1,47 @@
 @page "/watch/{Slug}"
 @using System.Globalization
-@implements IDisposable
-@inject ReviewService ReviewService
-@inject NavigationManager Nav
+@inject IWatchRepository Watches
+@inject IDealerRepository Dealers
+@inject IReviewReadRepository Reviews
+@inject IReviewWriteRepository ReviewWrites
+@inject ICurrentUserService CurrentUser
+@inject HelpfulVoteTracker HelpfulVotes
 
-@if (watch is null)
+@if (error is not null)
 {
-    <PageTitle>Listing Not Found — LuxWatch</PageTitle>
+    <PageTitle>Something went wrong — LuxWatch</PageTitle>
+    <Container Class="py-20">
+        <div role="alert" class="mx-auto max-w-xl rounded-lg border border-error/40 bg-error/10 p-6 text-center">
+            <p class="font-semibold text-error">We couldn't load this listing.</p>
+            <p class="mt-1 break-words text-xs text-text-secondary">@error</p>
+            <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4" OnClick="LoadAsync">Retry</Button>
+        </div>
+    </Container>
+}
+else if (loading)
+{
+    <PageTitle>Loading… — LuxWatch</PageTitle>
+    <Container Class="py-8 md:py-12">
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-10" aria-busy="true" aria-label="Loading listing">
+            <div class="aspect-square w-full animate-pulse rounded-xl bg-field"></div>
+            <div class="space-y-4">
+                <div class="h-3 w-1/3 animate-pulse rounded bg-field"></div>
+                <div class="h-9 w-3/4 animate-pulse rounded bg-field"></div>
+                <div class="h-4 w-1/2 animate-pulse rounded bg-field"></div>
+                <div class="h-10 w-1/3 animate-pulse rounded bg-field"></div>
+                <div class="h-24 w-full animate-pulse rounded-lg bg-field"></div>
+                <div class="h-14 w-full animate-pulse rounded-md bg-field"></div>
+            </div>
+        </div>
+    </Container>
+}
+else if (watch is null)
+{
+    <PageTitle>Watch not found — LuxWatch</PageTitle>
     <Container Class="py-20 text-center">
-        <h1 class="font-display text-3xl font-bold text-text mb-4">Listing not found</h1>
-        <p class="text-text-muted mb-8">The watch listing you are looking for does not exist or has been removed.</p>
-        <Button Href="/" Variant="ButtonVariant.Primary">Back to Home</Button>
+        <h1 class="font-display text-3xl font-bold text-text mb-4">Watch not found</h1>
+        <p class="text-text-muted mb-8">The listing you are looking for does not exist or has been removed.</p>
+        <Button Href="/collections/bestsellers" Variant="ButtonVariant.Primary">Browse bestsellers</Button>
     </Container>
 }
 else
@@ -18,28 +49,7 @@ else
     <PageTitle>@watch.Brand.Name @watch.Model — LuxWatch</PageTitle>
 
     <Container Class="py-8 md:py-12">
-        <!-- 1. Success banner (only when reviewed=true in query string) -->
-        @if (Reviewed && !bannerDismissed)
-        {
-            <div role="status" class="mb-6 flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
-                <div class="flex items-center gap-2">
-                    <svg class="size-4 shrink-0 text-success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                    </svg>
-                    <span>Thanks, your review is now live.</span>
-                </div>
-                <button type="button"
-                        @onclick="() => bannerDismissed = true"
-                        aria-label="Dismiss notification"
-                        class="rounded p-1 text-success/80 hover:bg-success/20 hover:text-success transition-colors">
-                    <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                    </svg>
-                </button>
-            </div>
-        }
-
-        <!-- 2. Breadcrumb -->
+        <!-- Breadcrumb -->
         <nav aria-label="Breadcrumb" class="mb-6 flex flex-wrap items-center gap-2 text-xs text-text-muted">
             <a href="/" class="transition-colors hover:text-text">Home</a>
             <span aria-hidden="true">›</span>
@@ -213,8 +223,8 @@ else
                             <svg class="size-4 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
                             </svg>
-                            <span class="font-bold text-text">@ReviewService.Format(ReviewService.Average)</span>
-                            <a href="#reviews" class="text-xs text-text-secondary hover:text-gold underline">(@ReviewService.Total)</a>
+                            <span class="font-bold text-text">@FormatRating(stats?.AvgOverall)</span>
+                            <a href="#reviews" class="text-xs text-text-secondary hover:text-gold underline">(@ReviewCount)</a>
                         </div>
                     </div>
 
@@ -336,8 +346,50 @@ else
         <!-- 6. Dealer reviews section -->
         <section id="reviews" class="mt-16 scroll-mt-24 border-t border-border pt-12" aria-labelledby="dealer-reviews-heading">
             <h2 id="dealer-reviews-heading" class="mb-8 font-display text-2xl font-bold tracking-wide text-text md:text-3xl">
-                Dealer reviews (@ReviewService.Total)
+                Dealer reviews (@ReviewCount)
             </h2>
+
+            <!-- Soft delete feedback with Undo -->
+            @if (lastDeletedId is not null)
+            {
+                <div role="status" class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-strong bg-field px-4 py-3 text-xs sm:text-sm text-text">
+                    <span>Review deleted.</span>
+                    <div class="flex items-center gap-3">
+                        @if (undoError is not null)
+                        {
+                            <span class="text-xs text-error">@undoError</span>
+                        }
+                        <button type="button"
+                                @onclick="UndoDeleteAsync"
+                                disabled="@undoing"
+                                class="font-semibold uppercase tracking-wider text-gold hover:text-gold-light disabled:opacity-50">
+                            @(undoing ? "Restoring…" : "Undo")
+                        </button>
+                        <button type="button" @onclick="() => lastDeletedId = null" aria-label="Dismiss" class="text-text-muted hover:text-text">✕</button>
+                    </div>
+                </div>
+            }
+
+            <!-- Success banner after a POST from the Rate Dealer page (?reviewed=1) -->
+            @if (Reviewed && !bannerDismissed)
+            {
+                <div role="status" class="mb-6 flex items-center justify-between rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-xs sm:text-sm text-success">
+                    <div class="flex items-center gap-2">
+                        <svg class="size-4 shrink-0 text-success" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Thanks, your review is posted.</span>
+                    </div>
+                    <button type="button"
+                            @onclick="() => bannerDismissed = true"
+                            aria-label="Dismiss notification"
+                            class="rounded p-1 text-success/80 hover:bg-success/20 hover:text-success transition-colors">
+                        <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                    </button>
+                </div>
+            }
 
             <!-- Left summary + Right distribution bars -->
             <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
@@ -347,20 +399,20 @@ else
                         <svg class="size-8 text-gold fill-current" viewBox="0 0 20 20" aria-hidden="true">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.957a1 1 0 0 0 .95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 0 0-.364 1.118l1.287 3.957c.3.921-.755 1.688-1.54 1.118l-3.37-2.448a1 1 0 0 0-1.176 0l-3.37 2.448c-.784.57-1.838-.197-1.539-1.118l1.287-3.957a1 1 0 0 0-.364-1.118L2.063 9.384c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 0 0 .95-.69l1.286-3.957z"/>
                         </svg>
-                        <span class="font-display text-4xl font-bold text-text">@ReviewService.Format(ReviewService.Average)</span>
+                        <span class="font-display text-4xl font-bold text-text">@FormatRating(stats?.AvgOverall)</span>
                     </div>
 
                     <div class="mt-4 space-y-1.5 text-xs text-text-secondary">
-                        <p>@ReviewService.Format(ReviewService.ShippingAvg) Shipping</p>
-                        <p>@ReviewService.Format(ReviewService.ItemAvg) Item description</p>
-                        <p>@ReviewService.Format(ReviewService.CommunicationAvg) Communication</p>
+                        <p>@FormatRating(stats?.AvgShipping) Shipping</p>
+                        <p>@FormatRating(stats?.AvgItemAsDescribed) Item description</p>
+                        <p>@FormatRating(stats?.AvgCommunication) Communication</p>
                     </div>
 
                     <div class="mt-4 flex items-center gap-2 text-xs font-semibold text-text">
                         <svg class="size-4 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
                         </svg>
-                        <span>@ReviewService.RecommendCount buyers recommend this dealer</span>
+                        <span>@(stats?.RecommendPct is int recommendPct ? $"{recommendPct}% of buyers recommend this dealer" : "No recommendations yet")</span>
                     </div>
 
                     <p class="mt-2 text-xs text-text-muted flex items-center gap-1.5">
@@ -377,8 +429,8 @@ else
                     @for (int s = 5; s >= 1; s--)
                     {
                         var star = s;
-                        var count = ReviewService.CountFor(star);
-                        var pct = ReviewService.Total > 0 ? (double)count / ReviewService.Total * 100 : 0;
+                        var count = stats?.CountFor(star) ?? 0;
+                        var pct = ReviewCount > 0 ? (double)count / ReviewCount * 100 : 0;
                         <div class="flex items-center gap-3">
                             <span class="w-12 text-text-muted">@star star@(star > 1 ? "s" : "")</span>
                             <div class="h-2 flex-1 rounded-full bg-border overflow-hidden">
@@ -486,19 +538,59 @@ else
                                 @review.Comment
                             </p>
 
-                            <!-- Helpful button -->
-                            <div class="flex justify-end pt-1">
+                            <!-- Actions: Delete (own reviews only) + Helpful -->
+                            @{
+                                var reviewId = review.Id;
+                                var voted = HelpfulVotes.HasVoted(reviewId);
+                                var helpfulBusy = helpfulPending.Contains(reviewId);
+                                var isOwn = currentUser is not null && review.Author.Id == currentUser.Id;
+                            }
+                            <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+                                @if (isOwn)
+                                {
+                                    @if (confirmingDeleteId == reviewId)
+                                    {
+                                        <!-- Inline confirm (no JS dialogs) -->
+                                        <span class="text-xs text-text-secondary">Delete this review?</span>
+                                        <button type="button"
+                                                @onclick="() => DeleteAsync(review)"
+                                                disabled="@(deletingId == reviewId)"
+                                                class="rounded border border-error/50 px-2 py-1 text-xs font-semibold text-error hover:bg-error/10 disabled:opacity-50">
+                                            @(deletingId == reviewId ? "Deleting…" : "Delete")
+                                        </button>
+                                        <button type="button"
+                                                @onclick="() => confirmingDeleteId = null"
+                                                disabled="@(deletingId == reviewId)"
+                                                class="rounded px-2 py-1 text-xs text-text-muted hover:text-text disabled:opacity-50">
+                                            Cancel
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                @onclick="() => { confirmingDeleteId = reviewId; cardErrors.Remove(reviewId); }"
+                                                class="rounded px-2 py-1 text-xs text-text-muted transition-colors hover:text-error">
+                                            Delete
+                                        </button>
+                                    }
+                                }
+
                                 <button type="button"
-                                        @onclick="() => MarkHelpful(review)"
-                                        disabled="@helpfulMarked.Contains(review.Id)"
-                                        class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-text-muted transition-colors hover:text-text disabled:cursor-default disabled:opacity-50">
-                                    <span>Helpful?</span>
-                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        @onclick="() => MarkHelpfulAsync(review)"
+                                        disabled="@(voted || helpfulBusy)"
+                                        aria-pressed="@(voted ? "true" : "false")"
+                                        class="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs transition-colors disabled:cursor-default @(voted ? "text-gold" : "text-text-muted hover:text-text disabled:opacity-50")">
+                                    <span>@(voted ? "Helpful ✓" : "Helpful?")</span>
+                                    <svg class="size-3.5" viewBox="0 0 24 24" fill="@(voted ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
                                     </svg>
-                                    <span>@review.Helpful</span>
+                                    <span>@HelpfulCount(review)</span>
                                 </button>
                             </div>
+                            @if (cardErrors.TryGetValue(reviewId, out var cardError))
+                            {
+                                <p role="alert" class="text-right text-xs text-error">@cardError</p>
+                            }
                         </article>
                     }
                 </div>
@@ -511,6 +603,19 @@ else
                         </Button>
                     </div>
                 }
+                else if (HasMoreReviews)
+                {
+                    <!-- All loaded reviews are shown; fetch the next page (1 request, on demand) -->
+                    <div class="mt-8 text-center">
+                        <Button Variant="ButtonVariant.Secondary" Disabled="loadingMoreReviews" OnClick="LoadMoreReviewsAsync">
+                            @(loadingMoreReviews ? "Loading…" : "Load more reviews")
+                        </Button>
+                        @if (moreReviewsError is not null)
+                        {
+                            <p role="alert" class="mt-2 text-xs text-error">@moreReviewsError</p>
+                        }
+                    </div>
+                }
             }
         </section>
     </Container>
@@ -518,7 +623,9 @@ else
 
 @code {
     [Parameter] public string Slug { get; set; } = string.Empty;
-    [SupplyParameterFromQuery(Name = "reviewed")] public bool Reviewed { get; set; }
+    // ?reviewed=1 after a successful POST from the Rate Dealer page.
+    [SupplyParameterFromQuery(Name = "reviewed")] public string? ReviewedParam { get; set; }
+    private bool Reviewed => ReviewedParam is "1" or "true";
 
     private Watch? watch;
     private int selectedImageIndex = 0;
@@ -549,39 +656,239 @@ else
     }
 
     private int visibleCount = 5;
-    private readonly HashSet<Guid> helpfulMarked = new();
+
+    // ── Data (Supabase) ──────────────────────────────────────────────────────
+    private const int ReviewPageSize = 10;
+    private DealerStats? stats;
+    private List<Review> reviews = new();
+    private int reviewsPage = 1;
+    private bool loading = true;
+    private string? error;
+    private string? loadedSlug;          // guards against reloading the same watch
+    private bool loadingMoreReviews;
+    private string? moreReviewsError;
+
+    // ── Writes (Phase 5) ─────────────────────────────────────────────────────
+    private User? currentUser;
+    private readonly Dictionary<Guid, int> helpfulCounts = new();   // in-place count after a Helpful PATCH
+    private readonly HashSet<Guid> helpfulPending = new();          // button disabled while its PATCH runs
+    private readonly Dictionary<Guid, string> cardErrors = new();   // inline error per review card
+    private Guid? confirmingDeleteId;
+    private Guid? deletingId;
+    private Guid? lastDeletedId;                                    // shows "Review deleted. Undo"
+    private bool undoing;
+    private string? undoError;
+
+    private int ReviewCount => stats?.ReviewCount ?? reviews.Count;
+    private bool HasMoreReviews => reviews.Count < ReviewCount;
 
     private string CurrentMainImage =>
         watch?.Images is { Count: > 0 } && selectedImageIndex < watch.Images.Count
             ? watch.Images[selectedImageIndex].Url
             : "/images/landing_page_hero_macro.jpg";
 
-    protected override void OnInitialized()
+    // OnParametersSetAsync (not OnInitializedAsync): navigating from one watch to
+    // another keeps this component instance and only changes Slug.
+    protected override async Task OnParametersSetAsync()
     {
-        ReviewService.OnChange += OnReviewServiceChanged;
-        watch = SampleData.Find(Slug);
+        if (string.Equals(Slug, loadedSlug, StringComparison.Ordinal)) return;
+        await LoadAsync();
     }
 
-    protected override void OnParametersSet()
+    /// <summary>
+    /// 4 requests per page load, whatever the number of reviews:
+    ///   1. the watch with brand, dealer (+ owner), images and specs embedded;
+    ///   2+3. in parallel: dealer_stats (1) and a page of dealer_reviews +
+    ///        one batched watches request for that page (2).
+    /// </summary>
+    private async Task LoadAsync()
     {
-        watch = SampleData.Find(Slug);
+        loading = true;
+        error = null;
+        moreReviewsError = null;
+        ResetViewState();
+        try
+        {
+            var w = await Watches.GetBySlugAsync(Slug);
+            if (w is not null)
+            {
+                var statsTask = Dealers.GetStatsAsync(w.Dealer.Id);
+                var reviewsTask = Reviews.GetForDealerAsync(w.Dealer.Id, 1, ReviewPageSize);
+                // Cached after the first page of the session (TEMP until Supabase Auth).
+                var userTask = CurrentUser.GetAsync();
+                await Task.WhenAll(statsTask, reviewsTask, userTask);
+
+                stats = statsTask.Result;
+                w.Dealer.Stats = stats;
+                reviews = reviewsTask.Result.ToList();
+                reviewsPage = 1;
+                currentUser = userTask.Result;
+            }
+            watch = w;                   // null → "Watch not found"
+            loadedSlug = Slug;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            loadedSlug = null;           // allow Retry / re-navigation to load again
+        }
+        finally
+        {
+            loading = false;
+        }
     }
 
-    private void OnReviewServiceChanged()
+    private void ResetViewState()
     {
-        InvokeAsync(StateHasChanged);
+        watch = null;
+        stats = null;
+        reviews = new();
+        selectedImageIndex = 0;
+        isFavorite = false;
+        showBuyNotice = false;
+        selectedFilter = "all";
+        selectedSort = "newest";
+        visibleCount = 5;
+        helpfulCounts.Clear();
+        helpfulPending.Clear();
+        cardErrors.Clear();
+        confirmingDeleteId = null;
+        deletingId = null;
+        lastDeletedId = null;
+        undoError = null;
     }
 
-    public void Dispose()
+    private int HelpfulCount(Review review) =>
+        helpfulCounts.TryGetValue(review.Id, out var c) ? c : review.Helpful;
+
+    /// <summary>Step 8 · Update: PATCH helpful_count + 1, then update just this card.</summary>
+    private async Task MarkHelpfulAsync(Review review)
     {
-        ReviewService.OnChange -= OnReviewServiceChanged;
+        var id = review.Id;
+        if (HelpfulVotes.HasVoted(id) || !helpfulPending.Add(id)) return;
+        cardErrors.Remove(id);
+        try
+        {
+            var next = await ReviewWrites.MarkHelpfulAsync(id, HelpfulCount(review));
+            helpfulCounts[id] = next;          // in place: no page or stats reload
+            HelpfulVotes.MarkVoted(id);
+        }
+        catch (Exception ex)
+        {
+            cardErrors[id] = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            helpfulPending.Remove(id);
+        }
     }
 
+    /// <summary>Step 8 · Delete (soft): PATCH deleted_at = now(), then reload reviews + stats.</summary>
+    private async Task DeleteAsync(Review review)
+    {
+        var id = review.Id;
+        if (deletingId is not null) return;
+        deletingId = id;
+        cardErrors.Remove(id);
+        try
+        {
+            await ReviewWrites.SoftDeleteAsync(id);
+            confirmingDeleteId = null;
+            undoError = null;
+            lastDeletedId = id;
+            bannerDismissed = true;            // "review is posted" would now contradict "Review deleted"
+            await ReloadReviewsAndStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            cardErrors[id] = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            deletingId = null;
+        }
+    }
+
+    /// <summary>Undo: PATCH deleted_at = null (the row was never removed), then reload.</summary>
+    private async Task UndoDeleteAsync()
+    {
+        if (lastDeletedId is not Guid id || undoing) return;
+        undoing = true;
+        undoError = null;
+        try
+        {
+            await ReviewWrites.RestoreAsync(id);
+            lastDeletedId = null;
+            await ReloadReviewsAndStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            undoError = SupabaseErrors.Map(ex).Message;
+        }
+        finally
+        {
+            undoing = false;
+        }
+    }
+
+    /// <summary>
+    /// After a write that changes the list: back to page 1, and reload stats in
+    /// parallel (1 + 2 requests) so count, average, recommend % and star bars agree.
+    /// </summary>
+    private async Task ReloadReviewsAndStatsAsync()
+    {
+        if (watch is null) return;
+        try
+        {
+            var statsTask = Dealers.GetStatsAsync(watch.Dealer.Id);
+            var reviewsTask = Reviews.GetForDealerAsync(watch.Dealer.Id, 1, ReviewPageSize);
+            await Task.WhenAll(statsTask, reviewsTask);
+
+            stats = statsTask.Result;
+            watch.Dealer.Stats = stats;
+            reviews = reviewsTask.Result.ToList();
+            reviewsPage = 1;
+            visibleCount = 5;
+            helpfulCounts.Clear();             // fresh counts from the database
+            moreReviewsError = null;
+        }
+        catch (Exception ex)
+        {
+            moreReviewsError = "Saved, but the list couldn't refresh: " + SupabaseErrors.Map(ex).Message;
+        }
+    }
+
+    private async Task LoadMoreReviewsAsync()
+    {
+        if (watch is null || loadingMoreReviews) return;
+        loadingMoreReviews = true;
+        moreReviewsError = null;
+        try
+        {
+            var next = await Reviews.GetForDealerAsync(watch.Dealer.Id, reviewsPage + 1, ReviewPageSize);
+            reviews.AddRange(next);
+            reviewsPage++;
+            visibleCount += 5;
+        }
+        catch (Exception ex)
+        {
+            moreReviewsError = ex.Message;
+        }
+        finally
+        {
+            loadingMoreReviews = false;
+        }
+    }
+
+    private static string FormatRating(decimal? value) =>
+        value is decimal d ? d.ToString("0.0", CultureInfo.InvariantCulture) : "–";
+
+    // Filter/sort apply to the reviews loaded so far (page 1 = 10 newest).
     private IEnumerable<Review> FilteredReviews
     {
         get
         {
-            var query = ReviewService.All;
+            IEnumerable<Review> query = reviews;
 
             if (int.TryParse(selectedFilter, out int stars))
             {
@@ -595,14 +902,6 @@ else
                 "helpful" => query.OrderByDescending(r => r.Helpful),
                 _ => query.OrderByDescending(r => r.CreatedAt)
             };
-        }
-    }
-
-    private void MarkHelpful(Review review)
-    {
-        if (helpfulMarked.Add(review.Id))
-        {
-            ReviewService.MarkHelpful(review);
         }
     }
 

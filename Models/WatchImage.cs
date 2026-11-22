@@ -5,7 +5,7 @@ namespace LuxWatch.Models;
 /// </summary>
 public class WatchImage
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Url { get; private set; }
     public string AltText { get; private set; }

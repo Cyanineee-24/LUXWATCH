@@ -1,322 +1,384 @@
 @page "/watch/{Slug}/rate"
 @using System.Globalization
 @inject NavigationManager Nav
-@inject ReviewService ReviewService
+@inject IWatchRepository Watches
+@inject IOrderRepository Orders
+@inject IReviewWriteRepository ReviewWrites
+@inject ICurrentUserService CurrentUser
 
-@if (watch is null)
+@if (loadError is not null)
 {
-    <PageTitle>Listing Not Found — LuxWatch</PageTitle>
+    <PageTitle>Something went wrong — LuxWatch</PageTitle>
+    <Container Class="py-20">
+        <div role="alert" class="mx-auto max-w-xl rounded-lg border border-error/40 bg-error/10 p-6 text-center">
+            <p class="font-semibold text-error">We couldn't load this page.</p>
+            <p class="mt-1 break-words text-xs text-text-secondary">@loadError</p>
+            <Button Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-4" OnClick="LoadAsync">Retry</Button>
+        </div>
+    </Container>
+}
+else if (loading)
+{
+    <PageTitle>Loading… — LuxWatch</PageTitle>
+    <Container Class="py-8 md:py-12">
+        <div class="mb-8 h-9 w-64 animate-pulse rounded bg-field"></div>
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]" aria-busy="true" aria-label="Loading">
+            <div class="h-64 animate-pulse rounded-lg bg-field"></div>
+            <div class="h-96 animate-pulse rounded-lg bg-field"></div>
+        </div>
+    </Container>
+}
+else if (watch is null)
+{
+    <PageTitle>Watch not found — LuxWatch</PageTitle>
     <Container Class="py-20 text-center">
-        <h1 class="font-display text-3xl font-bold text-text mb-4">Listing not found</h1>
-        <p class="text-text-muted mb-8">The watch listing you are looking for does not exist or has been removed.</p>
-        <Button Href="/" Variant="ButtonVariant.Primary">Back to Home</Button>
+        <h1 class="font-display text-3xl font-bold text-text mb-4">Watch not found</h1>
+        <p class="text-text-muted mb-8">The listing you are looking for does not exist or has been removed.</p>
+        <Button Href="/collections/bestsellers" Variant="ButtonVariant.Primary">Browse bestsellers</Button>
     </Container>
 }
 else
 {
-    <PageTitle>Rate your dealer — @watch.Brand.Name @watch.Model — LuxWatch</PageTitle>
+    <PageTitle>Rate @watch.Dealer.Name — LuxWatch</PageTitle>
 
     <Container Class="py-8 md:py-12">
         <!-- Breadcrumb -->
         <nav aria-label="Breadcrumb" class="mb-6 flex items-center gap-2 text-xs text-text-muted">
-            <a href="/watch/@Slug" class="transition-colors hover:text-text">Watch listing</a>
+            <a href="/watch/@Slug" class="transition-colors hover:text-text">@watch.Brand.Name @watch.Model</a>
             <span aria-hidden="true">›</span>
             <span class="text-text" aria-current="page">Rate your dealer</span>
         </nav>
 
         <h1 class="mb-8 font-display text-3xl font-bold tracking-wide text-text md:text-4xl">
-            Rate your dealer
+            Rate @watch.Dealer.Name
         </h1>
 
-        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-8 items-start">
-            <!-- LEFT: Trade summary card (static, hardcoded completed order) -->
-            <Card Class="space-y-6">
-                <div class="flex items-center justify-between">
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
-                        <span class="size-1.5 rounded-full bg-success"></span>
-                        Delivered Sep 21, 2026
-                    </span>
-                    <span class="text-xs text-text-muted">Verified Order</span>
-                </div>
-
-                <div class="flex items-center gap-4">
-                    <img src="@(watch.Images.FirstOrDefault()?.Url ?? "/images/landing_page_hero_macro.jpg")"
-                         alt="@watch.Brand.Name @watch.Model"
-                         class="size-20 shrink-0 rounded-md border border-border object-cover bg-field" />
-                    <div>
-                        <h2 class="font-display text-base font-bold text-text">@watch.Brand.Name @watch.Model</h2>
-                        <p class="text-xs text-text-muted">Ref. @watch.Reference · @watch.Condition</p>
-                        <p class="mt-1 font-semibold text-gold">PHP @watch.PricePhp.ToString("N0", CultureInfo.InvariantCulture)</p>
-                    </div>
-                </div>
-
-                <div class="divide-y divide-border/60 border-y border-border/60 text-xs">
-                    <div class="flex items-center justify-between py-3">
-                        <span class="text-text-muted">Dealer</span>
-                        <span class="font-medium text-text">@watch.Dealer.Name</span>
-                    </div>
-                    <div class="flex items-center justify-between py-3">
-                        <span class="text-text-muted">Order</span>
-                        <span class="font-mono text-text">LW-2026-0412</span>
-                    </div>
-                </div>
-
-                <p class="text-xs text-text-muted">
-                    Only completed trades can be reviewed.
+        @if (reviewable.Count == 0)
+        {
+            <!-- Nothing to review: the common case for most dealers -->
+            <Card Class="mx-auto max-w-2xl text-center">
+                <p class="text-sm text-text-secondary">
+                    You haven't completed a purchase from <span class="font-semibold text-text">@watch.Dealer.Name</span> yet,
+                    so there's nothing to review.
                 </p>
+                <p class="mt-2 text-xs text-text-muted">Only buyers who completed a trade can review a dealer, once per order.</p>
+                <Button Href="@($"/watch/{Slug}")" Variant="ButtonVariant.Secondary" Size="ButtonSize.Sm" Class="mt-6">
+                    Back to the watch
+                </Button>
             </Card>
-
-            <!-- RIGHT: Form card -->
-            <Card>
-                <form @onsubmit="HandleSubmit" @onsubmit:preventDefault class="space-y-6" novalidate>
-                    <!-- 1. Overall experience -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-text">Overall experience</label>
-                        <div class="flex flex-wrap items-center gap-4">
-                            <StarRating Value="@overall"
-                                        ValueChanged="OnOverallChanged"
-                                        Interactive="true"
-                                        Size="30"
-                                        Label="Overall rating" />
-                            <span class="text-sm font-medium @(overall > 0 ? "text-gold" : "text-text-muted")">
-                                @RatingWord(overall)
-                            </span>
-                        </div>
+        }
+        else
+        {
+            <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-8 items-start">
+                <!-- LEFT: which completed order is being reviewed -->
+                <Card Class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-semibold text-success">
+                            <span class="size-1.5 rounded-full bg-success"></span>
+                            Completed trade
+                        </span>
+                        <span class="text-xs text-text-muted">Verified order</span>
                     </div>
 
-                    <hr class="border-border" />
-
-                    <!-- 2. Rate the details -->
-                    <div class="space-y-4">
-                        <p class="text-sm font-semibold text-text">Rate the details</p>
-
-                        <!-- Shipping -->
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-                            <span class="text-xs text-text-secondary">Shipping</span>
-                            <div class="flex items-center gap-3">
-                                <StarRating Value="@shipping"
-                                            ValueChanged="OnShippingChanged"
-                                            Interactive="true"
-                                            Size="18"
-                                            Label="Shipping rating" />
-                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(shipping)</span>
-                            </div>
-                        </div>
-
-                        <!-- Item as described -->
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
-                            <span class="text-xs text-text-secondary">Item as described</span>
-                            <div class="flex items-center gap-3">
-                                <StarRating Value="@itemAsDescribed"
-                                            ValueChanged="OnItemAsDescribedChanged"
-                                            Interactive="true"
-                                            Size="18"
-                                            Label="Item as described rating" />
-                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(itemAsDescribed)</span>
-                            </div>
-                        </div>
-
-                        <!-- Communication -->
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <span class="text-xs text-text-secondary">Communication</span>
-                            <div class="flex items-center gap-3">
-                                <StarRating Value="@communication"
-                                            ValueChanged="OnCommunicationChanged"
-                                            Interactive="true"
-                                            Size="18"
-                                            Label="Communication rating" />
-                                <span class="w-16 text-xs text-text-muted">@DetailRatingWord(communication)</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr class="border-border" />
-
-                    <!-- 3. Would you recommend this dealer? -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-text">Would you recommend this dealer?</label>
-                        <div class="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Recommend this dealer">
-                            <button type="button"
-                                    role="radio"
-                                    aria-checked="@(recommends ? "true" : "false")"
-                                    class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
-                                    @onclick="() => SetRecommends(true)">
-                                Yes
-                            </button>
-                            <button type="button"
-                                    role="radio"
-                                    aria-checked="@(!recommends ? "true" : "false")"
-                                    class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(!recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
-                                    @onclick="() => SetRecommends(false)">
-                                No
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 4. Your comment -->
-                    <div class="space-y-1">
-                        <Textarea Id="review-comment"
-                                  Label="Your comment"
-                                  Rows="5"
-                                  MaxLength="500"
-                                  Placeholder="Describe your experience with the dealer, condition of the watch, shipping packaging, etc."
-                                  Value="@comment"
-                                  ValueChanged="OnCommentChanged" />
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="text-text-muted">Minimum 10 characters</span>
-                            <span class="@(comment.Length >= 500 ? "text-error font-medium" : "text-text-muted")">
-                                @comment.Length/500
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- 5. Error alert area -->
-                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    @if (reviewable.Count > 1)
                     {
-                        <div role="alert" class="rounded-md border border-error/50 bg-error/10 p-3 text-xs text-error">
-                            @errorMessage
+                        <div class="space-y-2">
+                            <label for="order-picker" class="block text-xs font-semibold uppercase tracking-wider text-text-muted">Order to review</label>
+                            <select id="order-picker"
+                                    class="w-full rounded-md border border-border-strong bg-field px-4 py-2.5 text-sm text-text focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/25"
+                                    value="@selectedOrderId"
+                                    @onchange="OnOrderChanged"
+                                    disabled="@saving">
+                                @foreach (var o in reviewable)
+                                {
+                                    <option value="@o.OrderId">@o.OrderNumber · @o.BrandName @o.WatchModel</option>
+                                }
+                            </select>
                         </div>
                     }
 
-                    <!-- 6. Submit Button -->
-                    <Button Type="submit"
-                            Size="ButtonSize.Lg"
-                            Class="w-full"
-                            Disabled="@isSubmitting">
-                        Submit review
-                    </Button>
-                </form>
-            </Card>
-        </div>
+                    @if (SelectedOrder is { } order)
+                    {
+                        <div class="divide-y divide-border/60 border-y border-border/60 text-xs">
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-text-muted">Watch</span>
+                                <span class="font-medium text-text text-right">@order.BrandName @order.WatchModel</span>
+                            </div>
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-text-muted">Order</span>
+                                <span class="font-mono text-text">@order.OrderNumber</span>
+                            </div>
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-text-muted">Placed</span>
+                                <span class="text-text">@order.PlacedAt.ToString("MMM d, yyyy", CultureInfo.InvariantCulture)</span>
+                            </div>
+                            <div class="flex items-center justify-between py-3">
+                                <span class="text-text-muted">Dealer</span>
+                                <span class="font-medium text-text">@watch.Dealer.Name</span>
+                            </div>
+                        </div>
+                    }
+
+                    <p class="text-xs text-text-muted">One review per completed order.</p>
+                </Card>
+
+                <!-- RIGHT: Form card -->
+                <Card>
+                    <form @onsubmit="HandleSubmitAsync" @onsubmit:preventDefault class="space-y-6" novalidate>
+                        <!-- 1. Overall experience -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-text">Overall experience</label>
+                            <div class="flex flex-wrap items-center gap-4">
+                                <StarRating Value="@overall"
+                                            ValueChanged="OnOverallChanged"
+                                            Interactive="true"
+                                            Size="30"
+                                            Label="Overall rating" />
+                                <span class="text-sm font-medium @(overall > 0 ? "text-gold" : "text-text-muted")">
+                                    @RatingWord(overall)
+                                </span>
+                            </div>
+                            @if (showErrors && overall == 0)
+                            {
+                                <p class="text-xs text-error">Select an overall rating.</p>
+                            }
+                        </div>
+
+                        <hr class="border-border" />
+
+                        <!-- 2. Rate the details -->
+                        <div class="space-y-4">
+                            <p class="text-sm font-semibold text-text">Rate the details</p>
+
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <span class="text-xs text-text-secondary">Shipping</span>
+                                <div class="flex items-center gap-3">
+                                    <StarRating Value="@shipping" ValueChanged="OnShippingChanged" Interactive="true" Size="18" Label="Shipping rating" />
+                                    <span class="w-16 text-xs text-text-muted">@DetailRatingWord(shipping)</span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/60 pb-3">
+                                <span class="text-xs text-text-secondary">Item as described</span>
+                                <div class="flex items-center gap-3">
+                                    <StarRating Value="@itemAsDescribed" ValueChanged="OnItemAsDescribedChanged" Interactive="true" Size="18" Label="Item as described rating" />
+                                    <span class="w-16 text-xs text-text-muted">@DetailRatingWord(itemAsDescribed)</span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <span class="text-xs text-text-secondary">Communication</span>
+                                <div class="flex items-center gap-3">
+                                    <StarRating Value="@communication" ValueChanged="OnCommunicationChanged" Interactive="true" Size="18" Label="Communication rating" />
+                                    <span class="w-16 text-xs text-text-muted">@DetailRatingWord(communication)</span>
+                                </div>
+                            </div>
+                            @if (showErrors && (shipping == 0 || itemAsDescribed == 0 || communication == 0))
+                            {
+                                <p class="text-xs text-error">Rate shipping, item as described and communication.</p>
+                            }
+                        </div>
+
+                        <hr class="border-border" />
+
+                        <!-- 3. Would you recommend this dealer? -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-text">Would you recommend this dealer?</label>
+                            <div class="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Recommend this dealer">
+                                <button type="button"
+                                        role="radio"
+                                        aria-checked="@(recommends ? "true" : "false")"
+                                        class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
+                                        @onclick="() => SetRecommends(true)">
+                                    Yes
+                                </button>
+                                <button type="button"
+                                        role="radio"
+                                        aria-checked="@(!recommends ? "true" : "false")"
+                                        class="rounded-md border py-3 text-xs font-semibold uppercase tracking-wider transition-colors @(!recommends ? "border-gold bg-gold text-on-gold shadow-gold" : "border-border-strong bg-field text-text-secondary hover:border-gold/40 hover:text-text")"
+                                        @onclick="() => SetRecommends(false)">
+                                    No
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4. Your comment (10–500 characters, same rule as the database CHECK) -->
+                        <div class="space-y-1">
+                            <Textarea Id="review-comment"
+                                      Label="Your comment"
+                                      Rows="5"
+                                      MaxLength="@MaxComment"
+                                      Placeholder="Describe your experience with the dealer, condition of the watch, shipping packaging, etc."
+                                      Value="@comment"
+                                      ValueChanged="OnCommentChanged"
+                                      ErrorText="@(showErrors && !CommentValid ? $"Write between {MinComment} and {MaxComment} characters." : null)" />
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="@(CommentLength > 0 && CommentLength < MinComment ? "text-warning" : "text-text-muted")">
+                                    Minimum @MinComment characters
+                                </span>
+                                <span class="@(CommentLength > MaxComment ? "text-error font-medium" : CommentLength >= MaxComment - 20 ? "text-warning" : "text-text-muted")">
+                                    @CommentLength/@MaxComment
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 5. Server / mapping errors -->
+                        @if (!string.IsNullOrWhiteSpace(submitError))
+                        {
+                            <div role="alert" class="rounded-md border border-error/50 bg-error/10 p-3 text-xs text-error">
+                                @submitError
+                            </div>
+                        }
+
+                        <!-- 6. Submit: disabled while saving, so a double click can't send two POSTs -->
+                        <Button Type="submit"
+                                Size="ButtonSize.Lg"
+                                Class="w-full"
+                                Disabled="@saving">
+                            @(saving ? "Submitting…" : "Submit review")
+                        </Button>
+                    </form>
+                </Card>
+            </div>
+        }
     </Container>
 }
 
 @code {
+    private const int MinComment = 10;
+    private const int MaxComment = 500;
+
     [Parameter] public string Slug { get; set; } = string.Empty;
 
     private Watch? watch;
+    private User? currentUser;
+    private List<ReviewableOrder> reviewable = new();
+    private Guid? selectedOrderId;
 
-    private int overall = 0;
-    private int shipping = 0;
-    private int itemAsDescribed = 0;
-    private int communication = 0;
+    private bool loading = true;
+    private string? loadError;
+    private string? loadedSlug;
+
+    private int overall;
+    private int shipping;
+    private int itemAsDescribed;
+    private int communication;
     private bool recommends = true;
     private string comment = string.Empty;
 
-    private string? errorMessage;
-    private bool isSubmitting;
+    private bool showErrors;          // field errors appear after the first submit attempt
+    private bool saving;
+    private string? submitError;
 
-    protected override void OnInitialized()
+    private ReviewableOrder? SelectedOrder => reviewable.FirstOrDefault(o => o.OrderId == selectedOrderId);
+    private int CommentLength => comment.Trim().Length;
+    private bool CommentValid => CommentLength is >= MinComment and <= MaxComment;
+    private bool RatingsValid => overall is >= 1 and <= 5 && shipping is >= 1 and <= 5
+                                 && itemAsDescribed is >= 1 and <= 5 && communication is >= 1 and <= 5;
+
+    protected override async Task OnParametersSetAsync()
     {
-        watch = SampleData.Find(Slug);
+        if (string.Equals(Slug, loadedSlug, StringComparison.Ordinal)) return;
+        await LoadAsync();
     }
 
-    protected override void OnParametersSet()
+    /// <summary>
+    /// 1 request for the watch (with dealer), then the current user (cached after
+    /// the first page that needs it) and 1 request for the reviewable orders.
+    /// </summary>
+    private async Task LoadAsync()
     {
-        watch = SampleData.Find(Slug);
+        loading = true;
+        loadError = null;
+        try
+        {
+            var w = await Watches.GetBySlugAsync(Slug);
+            if (w is not null)
+            {
+                currentUser = await CurrentUser.GetAsync()
+                    ?? throw new InvalidOperationException("The demo user (Demo:CurrentUsername) was not found in the database.");
+                await LoadReviewableAsync(w.Dealer.Id);
+            }
+            watch = w;
+            loadedSlug = Slug;
+        }
+        catch (Exception ex)
+        {
+            loadError = ex.Message;
+            loadedSlug = null;
+        }
+        finally
+        {
+            loading = false;
+        }
     }
 
-    private void ClearError() => errorMessage = null;
-
-    private void OnOverallChanged(double val)
+    private async Task LoadReviewableAsync(Guid dealerId)
     {
-        overall = (int)val;
-        ClearError();
+        reviewable = (await Orders.GetReviewableAsync(currentUser!.Id, dealerId)).ToList();
+        if (SelectedOrder is null) selectedOrderId = reviewable.FirstOrDefault()?.OrderId;
     }
 
-    private void OnShippingChanged(double val)
+    private void OnOrderChanged(ChangeEventArgs e)
     {
-        shipping = (int)val;
-        ClearError();
+        if (Guid.TryParse(e.Value?.ToString(), out var id)) selectedOrderId = id;
+        submitError = null;
     }
 
-    private void OnItemAsDescribedChanged(double val)
-    {
-        itemAsDescribed = (int)val;
-        ClearError();
-    }
-
-    private void OnCommunicationChanged(double val)
-    {
-        communication = (int)val;
-        ClearError();
-    }
-
-    private void SetRecommends(bool value)
-    {
-        recommends = value;
-        ClearError();
-    }
-
-    private void OnCommentChanged(string val)
-    {
-        comment = val;
-        ClearError();
-    }
+    private void ClearSubmitError() => submitError = null;
+    private void OnOverallChanged(double val) { overall = (int)val; ClearSubmitError(); }
+    private void OnShippingChanged(double val) { shipping = (int)val; ClearSubmitError(); }
+    private void OnItemAsDescribedChanged(double val) { itemAsDescribed = (int)val; ClearSubmitError(); }
+    private void OnCommunicationChanged(double val) { communication = (int)val; ClearSubmitError(); }
+    private void SetRecommends(bool value) { recommends = value; ClearSubmitError(); }
+    private void OnCommentChanged(string val) { comment = val; ClearSubmitError(); }
 
     private static string RatingWord(int rating) => rating switch
     {
-        1 => "Poor",
-        2 => "Fair",
-        3 => "Good",
-        4 => "Very good",
-        5 => "Excellent",
+        1 => "Poor", 2 => "Fair", 3 => "Good", 4 => "Very good", 5 => "Excellent",
         _ => "Select a rating"
     };
 
     private static string DetailRatingWord(int rating) => rating switch
     {
-        1 => "Poor",
-        2 => "Fair",
-        3 => "Good",
-        4 => "Very good",
-        5 => "Excellent",
+        1 => "Poor", 2 => "Fair", 3 => "Good", 4 => "Very good", 5 => "Excellent",
         _ => string.Empty
     };
 
-    private void HandleSubmit()
+    /// <summary>Step 7 · Create: one POST /reviews, only once the form is valid.</summary>
+    private async Task HandleSubmitAsync()
     {
-        if (isSubmitting || watch is null) return;
+        if (saving || watch is null || SelectedOrder is null) return;
 
-        if (overall == 0)
-        {
-            errorMessage = "Select an overall rating.";
-            return;
-        }
+        // Validate BEFORE sending: an invalid request would only come back as a 400.
+        showErrors = true;
+        submitError = null;
+        if (!RatingsValid || !CommentValid) return;
 
-        if (shipping == 0 || itemAsDescribed == 0 || communication == 0)
-        {
-            errorMessage = "Rate shipping, item as described, and communication.";
-            return;
-        }
-
-        if (comment.Trim().Length < 10)
-        {
-            errorMessage = "Write at least 10 characters in your comment.";
-            return;
-        }
-
-        isSubmitting = true;
-
+        saving = true;
         try
         {
-            var order = SampleData.CreateDemoCompletedOrder(watch);
-            var newReview = new Review(
-                order: order,
-                overall: overall,
-                shipping: shipping,
-                itemAsDescribed: itemAsDescribed,
-                communication: communication,
-                recommends: recommends,
-                comment: comment.Trim()
-            );
+            await ReviewWrites.CreateAsync(new NewReview(
+                SelectedOrder.OrderId, overall, shipping, itemAsDescribed, communication,
+                recommends, comment.Trim()));
 
-            ReviewService.Add(newReview);
-            Nav.NavigateTo($"/watch/{Slug}?reviewed=true#reviews");
+            Nav.NavigateTo($"/watch/{Slug}?reviewed=1#reviews");
+        }
+        catch (Exception ex)
+        {
+            var error = SupabaseErrors.Map(ex);
+            submitError = error.Message;
+
+            if (error.Kind == WriteErrorKind.Duplicate)
+            {
+                // Someone (another tab?) already reviewed this order: refresh the picker.
+                try { await LoadReviewableAsync(watch.Dealer.Id); }
+                catch { /* keep the duplicate message */ }
+            }
         }
         finally
         {
-            isSubmitting = false;
+            saving = false;
         }
     }
 }

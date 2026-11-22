@@ -1,0 +1,64 @@
+# LuxWatch: Supabase Data API smoke test (VS Code "REST Client" extension).
+# Fill in YOUR project ref and PUBLISHABLE key locally. NEVER commit real values,
+# and never put the Secret key (from "Secret keys" in API Keys) here.
+
+@url = https://YOUR-REF.supabase.co
+@key = sb_publishable_YOUR_KEY
+
+### Active watches with brand and images, in one request (no N+1)
+GET {{url}}/rest/v1/watches?select=id,slug,model,price_php,brand:brands(name,slug),watch_images(url,sort_order)&status=eq.Active&order=listed_date.desc&limit=24
+apikey: {{key}}
+
+### Visible reviews
+GET {{url}}/rest/v1/reviews?select=*&deleted_at=is.null&order=created_at.desc
+apikey: {{key}}
+
+### Should FAIL (no delete grant): proves soft delete is enforced
+# Expect 401/403 "permission denied for table reviews". Any uuid works here,
+# the request is refused before rows are matched.
+DELETE {{url}}/rest/v1/reviews?id=eq.00000000-0000-0000-0000-000000000000
+apikey: {{key}}
+
+### Popular listings (views_in_48h > 1000)
+GET {{url}}/rest/v1/watches?select=slug,model,views_in_48h&status=eq.Active&views_in_48h=gt.1000&order=views_in_48h.desc
+apikey: {{key}}
+
+### Marcus's orders that have no review yet (Phase 5 RateDealer)
+# users!inner + users.username filters by buyer; reviews=is.null keeps only
+# orders without a review. Expect LW-2026-0401 and LW-2026-0402.
+GET {{url}}/rest/v1/orders?select=order_number,watches(slug,model),users!inner(username),reviews(id)&users.username=eq.marcusvance&reviews=is.null
+apikey: {{key}}
+
+### Soft delete a review (allowed: only helpful_count / deleted_at are updatable)
+# Paste a real review id from the "Visible reviews" request.
+PATCH {{url}}/rest/v1/reviews?id=eq.PASTE-REVIEW-UUID
+apikey: {{key}}
+Content-Type: application/json
+Prefer: return=representation
+
+{ "deleted_at": "2026-11-20T00:00:00Z" }
+
+### Dealer reviews (view): visible only, newest first
+# Paste a dealer id, e.g. from: GET {{url}}/rest/v1/dealers?select=id,name
+GET {{url}}/rest/v1/dealer_reviews?dealer_id=eq.PASTE-DEALER-UUID&deleted_at=is.null&order=created_at.desc
+apikey: {{key}}
+
+### Dealer stats (view) for the same dealer
+GET {{url}}/rest/v1/dealer_stats?dealer_id=eq.PASTE-DEALER-UUID
+apikey: {{key}}
+
+### Should FAIL: editing a rating is not allowed (column-level grant)
+PATCH {{url}}/rest/v1/reviews?id=eq.PASTE-REVIEW-UUID
+apikey: {{key}}
+Content-Type: application/json
+
+{ "overall": 1 }
+
+### Public user columns: should be 200
+GET {{url}}/rest/v1/users?select=id,username,full_name
+apikey: {{key}}
+
+### Should FAIL: email is not readable with the publishable key (column grant)
+# Expect 401/403 "permission denied for table users".
+GET {{url}}/rest/v1/users?select=email
+apikey: {{key}}

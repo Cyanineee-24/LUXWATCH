@@ -8,12 +8,14 @@ namespace LuxWatch.Models;
 /// </summary>
 public class User
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Username { get; private set; }
     public string FullName { get; private set; }
-    public string Email { get; private set; }
-    public string PasswordHash { get; private set; }
+    // Optional: not readable with the publishable key (users.email column grant).
+    public string? Email { get; private set; }
+    // Optional: passwords will live in Supabase Auth, never in public.users.
+    public string? PasswordHash { get; private set; }
     public string Country { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
@@ -36,20 +38,20 @@ public class User
     // UML: 0..* ── 0..*
     public IReadOnlyList<Review> MarkedHelpful => _markedHelpful;
 
-    public User(string username, string fullName, string email, string passwordHash, string country, DateTime? createdAt = null)
+    public User(string username, string fullName, string? email = null, string? passwordHash = null, string country = "", DateTime? createdAt = null)
     {
         Username = username ?? throw new ArgumentNullException(nameof(username));
         FullName = fullName ?? throw new ArgumentNullException(nameof(fullName));
-        Email = email ?? throw new ArgumentNullException(nameof(email));
-        PasswordHash = passwordHash ?? throw new ArgumentNullException(nameof(passwordHash));
-        Country = country ?? throw new ArgumentNullException(nameof(country));
+        Email = email;
+        PasswordHash = passwordHash;
+        Country = country ?? "";
         CreatedAt = createdAt ?? DateTime.UtcNow;
     }
 
-    // TODO: real auth
+    // TODO: real auth (Supabase Auth). A user without a local hash can't log in here.
     public bool Login(string pw)
     {
-        return HashPassword(pw) == PasswordHash;
+        return PasswordHash is not null && HashPassword(pw) == PasswordHash;
     }
 
     internal static string HashPassword(string password)
